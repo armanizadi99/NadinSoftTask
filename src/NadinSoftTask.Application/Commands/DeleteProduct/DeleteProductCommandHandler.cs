@@ -1,8 +1,7 @@
-#pragma warning disable CS9113 // Dependencies are read once the handler is implemented.
-
 using MediatR;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Domain.Common;
+using NadinSoftTask.Domain.Products;
 
 namespace NadinSoftTask.Application.Commands.DeleteProduct;
 
@@ -11,10 +10,27 @@ public sealed class DeleteProductCommandHandler(
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser) : IRequestHandler<DeleteProductCommand, Result>
 {
-    public Task<Result> Handle(
+    public async Task<Result> Handle(
         DeleteProductCommand request,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        Product? product = await productRepository.GetByIdAsync(request.Id);
+
+        if (product is null)
+        {
+            return new DomainError("Product was not found.", DomainErrorKind.NotFound);
+        }
+
+        if (!product.EnsureOwnedBy(currentUser.UserId))
+        {
+            return new DomainError(
+                "Only the product creator can modify this product.",
+                DomainErrorKind.NotAuthorized);
+        }
+
+        await productRepository.DeleteAsync(product);
+        await unitOfWork.SaveChangesAsync();
+
+        return Result.Success;
     }
 }
