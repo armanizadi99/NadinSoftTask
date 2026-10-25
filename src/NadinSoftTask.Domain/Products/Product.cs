@@ -17,11 +17,18 @@ public sealed class Product
         bool isAvailable,
         DateOnly produceDate)
     {
+        if (string.IsNullOrWhiteSpace(ownerId))
+        {
+            throw new ArgumentException("Owner id cannot be empty or whitespace.", nameof(ownerId));
+        }
+
         Id = id;
         OwnerId = ownerId;
-        Name = name;
-        ManufacturePhone = manufacturePhone;
-        ManufactureEmail = manufactureEmail;
+
+        SetName(name);
+        SetManufacturePhone(manufacturePhone);
+        SetManufactureEmail(manufactureEmail);
+
         IsAvailable = isAvailable;
         ProduceDate = produceDate;
     }
@@ -48,13 +55,6 @@ public sealed class Product
         bool isAvailable,
         DateOnly produceDate)
     {
-        if (string.IsNullOrWhiteSpace(ownerId))
-        {
-            throw new ArgumentException("Owner id cannot be empty or whitespace.", nameof(ownerId));
-        }
-
-        ValidateDetails(name, manufacturePhone, manufactureEmail);
-
         Product product = new(
             Guid.NewGuid(),
             ownerId,
@@ -81,10 +81,7 @@ public sealed class Product
         throw new NotImplementedException();
     }
 
-    private static void ValidateDetails(
-        string name,
-        Phone manufacturePhone,
-        Email manufactureEmail)
+    private void SetName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -98,7 +95,20 @@ public sealed class Product
                 nameof(name));
         }
 
+        Name = name;
+    }
+
+    private void SetManufacturePhone(Phone manufacturePhone)
+    {
         ArgumentNullException.ThrowIfNull(manufacturePhone);
+
+        ManufacturePhone = manufacturePhone;
+    }
+
+    private void SetManufactureEmail(Email manufactureEmail)
+    {
         ArgumentNullException.ThrowIfNull(manufactureEmail);
+
+        ManufactureEmail = manufactureEmail;
     }
 }
