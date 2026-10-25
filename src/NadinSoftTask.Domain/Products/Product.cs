@@ -10,6 +10,7 @@ public sealed class Product
 
     private Product(
         Guid id,
+        string ownerId,
         string name,
         Phone manufacturePhone,
         Email manufactureEmail,
@@ -17,6 +18,7 @@ public sealed class Product
         DateOnly produceDate)
     {
         Id = id;
+        OwnerId = ownerId;
         Name = name;
         ManufacturePhone = manufacturePhone;
         ManufactureEmail = manufactureEmail;
@@ -25,6 +27,8 @@ public sealed class Product
     }
 
     public Guid Id { get; private set; }
+
+    public string OwnerId { get; private set; } = null!;
 
     public string Name { get; private set; } = null!;
 
@@ -37,11 +41,50 @@ public sealed class Product
     public DateOnly ProduceDate { get; private set; }
 
     public static Result<Product> Create(
+        string ownerId,
         string name,
         Phone manufacturePhone,
         Email manufactureEmail,
         bool isAvailable,
         DateOnly produceDate)
+    {
+        if (string.IsNullOrWhiteSpace(ownerId))
+        {
+            throw new ArgumentException("Owner id cannot be empty or whitespace.", nameof(ownerId));
+        }
+
+        ValidateDetails(name, manufacturePhone, manufactureEmail);
+
+        Product product = new(
+            Guid.NewGuid(),
+            ownerId,
+            name,
+            manufacturePhone,
+            manufactureEmail,
+            isAvailable,
+            produceDate);
+
+        return product;
+    }
+
+    public bool EnsureOwnedBy(string requesterId) =>
+        string.Equals(OwnerId, requesterId, StringComparison.Ordinal);
+
+    public Result Update(
+        string requesterId,
+        string name,
+        Phone manufacturePhone,
+        Email manufactureEmail,
+        bool isAvailable,
+        DateOnly produceDate)
+    {
+        throw new NotImplementedException();
+    }
+
+    private static void ValidateDetails(
+        string name,
+        Phone manufacturePhone,
+        Email manufactureEmail)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -57,15 +100,5 @@ public sealed class Product
 
         ArgumentNullException.ThrowIfNull(manufacturePhone);
         ArgumentNullException.ThrowIfNull(manufactureEmail);
-
-        Product product = new(
-            Guid.NewGuid(),
-            name,
-            manufacturePhone,
-            manufactureEmail,
-            isAvailable,
-            produceDate);
-
-        return product;
     }
 }
