@@ -27,7 +27,6 @@ public class ProductTests
         result.Error.ShouldBeSameAs(DomainError.None);
 
         Product product = result.Value.ShouldBeOfType<Product>();
-        product.Id.ShouldNotBe(Guid.Empty);
         product.OwnerId.ShouldBe(ValidOwnerId);
         product.Name.ShouldBe(ValidName);
         product.ManufacturePhone.ShouldBeSameAs(ValidPhone);
@@ -42,15 +41,6 @@ public class ProductTests
         Result<Product> result = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, false, ValidProduceDate);
 
         result.Value!.IsAvailable.ShouldBeFalse();
-    }
-
-    [Fact]
-    public void Create_GeneratesNewIdEachTime()
-    {
-        Product first = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, true, ValidProduceDate).Value!;
-        Product second = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, true, ValidProduceDate).Value!;
-
-        first.Id.ShouldNotBe(second.Id);
     }
 
     [Theory]
@@ -190,7 +180,7 @@ public class ProductTests
     public void Update_PreservesIdAndOwnerId()
     {
         Product product = CreateProduct();
-        Guid id = product.Id;
+        int id = product.Id;
 
         product.Update(ValidOwnerId, UpdatedName, UpdatedPhone, UpdatedEmail, false, UpdatedProduceDate);
 

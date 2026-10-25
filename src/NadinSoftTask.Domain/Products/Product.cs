@@ -9,7 +9,6 @@ public sealed class Product
     }
 
     private Product(
-        Guid id,
         string ownerId,
         string name,
         Phone manufacturePhone,
@@ -22,7 +21,6 @@ public sealed class Product
             throw new ArgumentException("Owner id cannot be empty or whitespace.", nameof(ownerId));
         }
 
-        Id = id;
         OwnerId = ownerId;
 
         SetName(name);
@@ -33,7 +31,7 @@ public sealed class Product
         ProduceDate = produceDate;
     }
 
-    public Guid Id { get; private set; }
+    public int Id { get; private set; }
 
     public string OwnerId { get; private set; } = null!;
 
@@ -56,7 +54,6 @@ public sealed class Product
         DateOnly produceDate)
     {
         Product product = new(
-            Guid.NewGuid(),
             ownerId,
             name,
             manufacturePhone,
