@@ -1,5 +1,8 @@
 <Solution>
+  <Project Path="src/NadinSoftTask.Api/NadinSoftTask.Api.csproj" />
+  <Project Path="src/NadinSoftTask.Application/NadinSoftTask.Application.csproj" />
   <Project Path="src/NadinSoftTask.Domain/NadinSoftTask.Domain.csproj" />
+  <Project Path="src/NadinSoftTask.Infrastructure/NadinSoftTask.Infrastructure.csproj" />
   <Project Path="src/NadinSoftTask/NadinSoftTask.csproj" />
   <Project Path="tests/NadinSoftTask.Tests/NadinSoftTask.Tests.csproj" />
 </Solution>

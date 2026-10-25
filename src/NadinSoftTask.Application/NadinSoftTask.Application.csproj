@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NadinSoftTask.Domain\NadinSoftTask.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
