@@ -78,7 +78,21 @@ public sealed class Product
         bool isAvailable,
         DateOnly produceDate)
     {
-        throw new NotImplementedException();
+        if (!EnsureOwnedBy(requesterId))
+        {
+            return new DomainError(
+                "Only the product creator can modify this product.",
+                DomainErrorKind.NotAuthorized);
+        }
+
+        SetName(name);
+        SetManufacturePhone(manufacturePhone);
+        SetManufactureEmail(manufactureEmail);
+
+        IsAvailable = isAvailable;
+        ProduceDate = produceDate;
+
+        return Result.Success;
     }
 
     private void SetName(string name)
