@@ -145,6 +145,11 @@ public class EditProductCommandHandlerTests
         ProductTestContext context = new();
 
         context.GivenProduct(product);
+        context.GivenKeyExists(
+            command.ProduceDate,
+            command.ManufactureEmail,
+            exists: false,
+            excludeProductId: ProductId);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
@@ -159,7 +164,6 @@ public class EditProductCommandHandlerTests
         product.ProduceDate.ShouldBe(ProductTestData.ProduceDate);
 
         context.VerifyGetByIdOnce(ProductId);
-        context.VerifyKeyExistsNever();
         context.VerifyNotSaved();
         context.VerifyProductMapNotUsed();
     }
