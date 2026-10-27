@@ -1,5 +1,6 @@
 using NadinSoftTask.Application.Common.Dtos;
 using NadinSoftTask.Application.Queries.ListProductsForUser;
+using NadinSoftTask.Domain.Common;
 using NadinSoftTask.Domain.Products;
 using NadinSoftTask.Tests.Application.TestData;
 using NadinSoftTask.Tests.Application.TestSupport;
@@ -31,11 +32,13 @@ public class ListProductsForUserQueryHandlerTests
         context.GivenListByOwner(query.UserId, products);
         context.GivenListMap(expectedDtos, source => source.SequenceEqual(products));
 
-        IReadOnlyList<ProductDto> result = await CreateHandler(context).Handle(
+        Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             query,
             context.CancellationToken);
 
-        result.ShouldBe(expectedDtos);
+        result.IsSuccess.ShouldBeTrue();
+        result.Error.ShouldBeSameAs(DomainError.None);
+        result.Value.ShouldBe(expectedDtos);
 
         context.VerifyListByOwnerOnce(query.UserId);
         context.VerifyListMapUsedOnce();
@@ -65,12 +68,14 @@ public class ListProductsForUserQueryHandlerTests
             [expectedDto],
             source => source.Count == 1 && source[0].OwnerId == ProductTestData.OwnerId);
 
-        IReadOnlyList<ProductDto> result = await CreateHandler(context).Handle(
+        Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             query,
             context.CancellationToken);
 
-        result.ShouldHaveSingleItem().ShouldBe(expectedDto);
-        result.ShouldNotContain(dto => dto.OwnerId == ProductTestData.OtherOwnerId);
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.ShouldHaveSingleItem().ShouldBe(expectedDto);
+        result.Value.ShouldNotContain(dto => dto.OwnerId == ProductTestData.OtherOwnerId);
 
         context.VerifyListByOwnerOnce(query.UserId);
         context.VerifyListMapUsedOnce();
@@ -88,12 +93,13 @@ public class ListProductsForUserQueryHandlerTests
         context.GivenListByOwner(query.UserId, products);
         context.GivenListMap(expectedDtos, source => source.Count == 0);
 
-        IReadOnlyList<ProductDto> result = await CreateHandler(context).Handle(
+        Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             query,
             context.CancellationToken);
 
-        result.ShouldNotBeNull();
-        result.ShouldBeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.ShouldBeEmpty();
 
         context.VerifyListByOwnerOnce(query.UserId);
         context.VerifyListMapUsedOnce();

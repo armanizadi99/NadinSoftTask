@@ -49,4 +49,28 @@ public class EmailTests
     {
         Should.Throw<ArgumentException>(() => new Email(null!));
     }
+
+    [Theory]
+    [InlineData("owner@acme.com")]
+    [InlineData("a.b+tag@sub.example.co.uk")]
+    public void IsValid_WithValidEmail_ReturnsTrue(string value)
+    {
+        Email.IsValid(value).ShouldBeTrue();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("plainaddress")]
+    [InlineData("@example.com")]
+    [InlineData("user@")]
+    [InlineData("user@exa mple.com")]
+    [InlineData("Bob <bob@example.com>")]
+    [InlineData("user@example.com ")]
+    [InlineData(" user@example.com")]
+    public void IsValid_WithInvalidEmail_ReturnsFalse(string? value)
+    {
+        Email.IsValid(value).ShouldBeFalse();
+    }
 }

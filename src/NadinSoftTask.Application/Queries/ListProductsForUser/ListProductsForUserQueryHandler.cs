@@ -2,15 +2,16 @@ using AutoMapper;
 using MediatR;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
+using NadinSoftTask.Domain.Common;
 using NadinSoftTask.Domain.Products;
 
 namespace NadinSoftTask.Application.Queries.ListProductsForUser;
 
 public sealed class ListProductsForUserQueryHandler(
     IProductRepository productRepository,
-    IMapper mapper) : IRequestHandler<ListProductsForUserQuery, IReadOnlyList<ProductDto>>
+    IMapper mapper) : IRequestHandler<ListProductsForUserQuery, Result<IReadOnlyList<ProductDto>>>
 {
-    public async Task<IReadOnlyList<ProductDto>> Handle(
+    public async Task<Result<IReadOnlyList<ProductDto>>> Handle(
         ListProductsForUserQuery request,
         CancellationToken cancellationToken)
     {
@@ -18,6 +19,7 @@ public sealed class ListProductsForUserQueryHandler(
             request.UserId,
             cancellationToken);
 
-        return mapper.Map<IReadOnlyList<ProductDto>>(products);
+        return Result<IReadOnlyList<ProductDto>>.Success(
+            mapper.Map<IReadOnlyList<ProductDto>>(products));
     }
 }

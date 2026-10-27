@@ -9,6 +9,9 @@ public sealed class Result
 
     public static Result Success { get; } = new(DomainError.None);
 
+    public static Result Failure(DomainError error) =>
+        new(error ?? throw new ArgumentNullException(nameof(error)));
+
     public DomainError Error { get; }
 
     public bool IsSuccess => Error == DomainError.None;
@@ -34,6 +37,12 @@ public sealed class Result<T>
     public bool IsSuccess => Error == DomainError.None;
 
     public bool IsFailure => !IsSuccess;
+
+    public static Result<T> Success(T value) =>
+        new(value, DomainError.None);
+
+    public static Result<T> Failure(DomainError error) =>
+        new(default, error ?? throw new ArgumentNullException(nameof(error)));
 
     public static implicit operator Result<T>(T value) =>
         new(value, DomainError.None);

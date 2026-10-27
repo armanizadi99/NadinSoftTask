@@ -5,5 +5,6 @@ public enum DomainErrorKind
     None = 0,
     NotAuthorized = 1,
     NotFound = 2,
-    Conflict = 3
+    Conflict = 3,
+    Validation = 4
 }

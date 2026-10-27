@@ -1,5 +1,6 @@
 using NadinSoftTask.Application.Common.Dtos;
 using NadinSoftTask.Application.Queries.ListAllProducts;
+using NadinSoftTask.Domain.Common;
 using NadinSoftTask.Domain.Products;
 using NadinSoftTask.Tests.Application.TestData;
 using NadinSoftTask.Tests.Application.TestSupport;
@@ -31,11 +32,13 @@ public class ListAllProductsQueryHandlerTests
         context.GivenListAll(products);
         context.GivenListMap(expectedDtos, source => source.SequenceEqual(products));
 
-        IReadOnlyList<ProductDto> result = await CreateHandler(context).Handle(
+        Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             new ListAllProductsQuery(),
             context.CancellationToken);
 
-        result.ShouldBe(expectedDtos);
+        result.IsSuccess.ShouldBeTrue();
+        result.Error.ShouldBeSameAs(DomainError.None);
+        result.Value.ShouldBe(expectedDtos);
 
         context.VerifyListAllOnce();
         context.VerifyListMapUsedOnce();
@@ -51,12 +54,13 @@ public class ListAllProductsQueryHandlerTests
         context.GivenListAll(products);
         context.GivenListMap(expectedDtos, source => source.Count == 0);
 
-        IReadOnlyList<ProductDto> result = await CreateHandler(context).Handle(
+        Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             new ListAllProductsQuery(),
             context.CancellationToken);
 
-        result.ShouldNotBeNull();
-        result.ShouldBeEmpty();
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldNotBeNull();
+        result.Value.ShouldBeEmpty();
 
         context.VerifyListAllOnce();
         context.VerifyListMapUsedOnce();

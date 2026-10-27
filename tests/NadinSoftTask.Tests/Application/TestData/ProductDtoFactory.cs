@@ -24,8 +24,8 @@ internal static class ProductDtoFactory
             command.Name,
             command.ManufacturePhone,
             command.ManufactureEmail,
-            command.IsAvailable,
-            command.ProduceDate);
+            command.IsAvailable!.Value,
+            command.ProduceDate!.Value);
 
     public static ProductDto From(EditProductCommand command, string ownerId) =>
         new(
@@ -34,6 +34,6 @@ internal static class ProductDtoFactory
             command.Name,
             command.ManufacturePhone,
             command.ManufactureEmail,
-            command.IsAvailable,
-            command.ProduceDate);
+            command.IsAvailable!.Value,
+            command.ProduceDate!.Value);
 }

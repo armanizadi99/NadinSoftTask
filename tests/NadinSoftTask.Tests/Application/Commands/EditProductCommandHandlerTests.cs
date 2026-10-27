@@ -23,7 +23,7 @@ public class EditProductCommandHandlerTests
 
         context.GivenProduct(product);
         context.GivenKeyExists(
-            command.ProduceDate,
+            command.ProduceDate!.Value,
             command.ManufactureEmail,
             exists: false,
             excludeProductId: ProductId);
@@ -32,8 +32,8 @@ public class EditProductCommandHandlerTests
             updated.Name == command.Name &&
             updated.ManufacturePhone.Value == command.ManufacturePhone &&
             updated.ManufactureEmail.Value == command.ManufactureEmail &&
-            updated.IsAvailable == command.IsAvailable &&
-            updated.ProduceDate == command.ProduceDate);
+            updated.IsAvailable == command.IsAvailable!.Value &&
+            updated.ProduceDate == command.ProduceDate!.Value);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
@@ -44,11 +44,11 @@ public class EditProductCommandHandlerTests
         product.Name.ShouldBe(command.Name);
         product.ManufacturePhone.Value.ShouldBe(command.ManufacturePhone);
         product.ManufactureEmail.Value.ShouldBe(command.ManufactureEmail);
-        product.IsAvailable.ShouldBe(command.IsAvailable);
-        product.ProduceDate.ShouldBe(command.ProduceDate);
+        product.IsAvailable.ShouldBe(command.IsAvailable!.Value);
+        product.ProduceDate.ShouldBe(command.ProduceDate!.Value);
 
         context.VerifyGetByIdOnce(ProductId);
-        context.VerifyKeyExistsOnce(command.ProduceDate, command.ManufactureEmail, ProductId);
+        context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail, ProductId);
         context.VerifyProductMapUsedOnce();
         context.VerifySavedOnce();
     }
@@ -95,7 +95,7 @@ public class EditProductCommandHandlerTests
 
         context.GivenProduct(product);
         context.GivenKeyExists(
-            command.ProduceDate,
+            command.ProduceDate!.Value,
             command.ManufactureEmail,
             exists: true,
             excludeProductId: ProductId);
@@ -112,7 +112,7 @@ public class EditProductCommandHandlerTests
         product.IsAvailable.ShouldBeTrue();
         product.ProduceDate.ShouldBe(ProductTestData.ProduceDate);
 
-        context.VerifyKeyExistsOnce(command.ProduceDate, command.ManufactureEmail, ProductId);
+        context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail, ProductId);
         context.VerifyNotSaved();
         context.VerifyProductMapNotUsed();
     }
@@ -146,7 +146,7 @@ public class EditProductCommandHandlerTests
 
         context.GivenProduct(product);
         context.GivenKeyExists(
-            command.ProduceDate,
+            command.ProduceDate!.Value,
             command.ManufactureEmail,
             exists: false,
             excludeProductId: ProductId);

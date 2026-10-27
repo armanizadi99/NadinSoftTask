@@ -1,4 +1,5 @@
 using MediatR;
+using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
 using NadinSoftTask.Domain.Common;
 
@@ -8,5 +9,5 @@ public sealed record CreateProductCommand(
     string Name,
     string ManufacturePhone,
     string ManufactureEmail,
-    bool IsAvailable,
-    DateOnly ProduceDate) : IRequest<Result<ProductDto>>;
+    bool? IsAvailable,
+    DateOnly? ProduceDate) : IRequest<Result<ProductDto>>, IProductCommand;

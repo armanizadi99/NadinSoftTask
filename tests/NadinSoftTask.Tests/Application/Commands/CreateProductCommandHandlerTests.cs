@@ -19,15 +19,15 @@ public class CreateProductCommandHandlerTests
         ProductTestContext context = new();
         ProductDto expectedDto = ProductDtoFactory.From(command, ProductTestData.OwnerId, createdProductId);
 
-        context.GivenKeyExists(command.ProduceDate, command.ManufactureEmail, exists: false);
+        context.GivenKeyExists(command.ProduceDate!.Value, command.ManufactureEmail, exists: false);
         context.GivenAddAssignsId(createdProductId, product =>
             product.Id == 0 &&
             product.OwnerId == ProductTestData.OwnerId &&
             product.Name == command.Name &&
             product.ManufacturePhone.Value == command.ManufacturePhone &&
             product.ManufactureEmail.Value == command.ManufactureEmail &&
-            product.IsAvailable == command.IsAvailable &&
-            product.ProduceDate == command.ProduceDate);
+            product.IsAvailable == command.IsAvailable!.Value &&
+            product.ProduceDate == command.ProduceDate!.Value);
         context.GivenMap(expectedDto, product => product.Id == createdProductId);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
@@ -36,7 +36,7 @@ public class CreateProductCommandHandlerTests
         result.Error.ShouldBeSameAs(DomainError.None);
         result.Value.ShouldBe(expectedDto);
 
-        context.VerifyKeyExistsOnce(command.ProduceDate, command.ManufactureEmail);
+        context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail);
         context.VerifyAddedOnce();
         context.VerifyNotDeleted();
         context.VerifyProductMapUsedOnce();
@@ -49,7 +49,7 @@ public class CreateProductCommandHandlerTests
         CreateProductCommand command = CreateCommand();
         ProductTestContext context = new();
 
-        context.GivenKeyExists(command.ProduceDate, command.ManufactureEmail, exists: true);
+        context.GivenKeyExists(command.ProduceDate!.Value, command.ManufactureEmail, exists: true);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
@@ -57,7 +57,7 @@ public class CreateProductCommandHandlerTests
         result.Value.ShouldBeNull();
         result.Error.Kind.ShouldBe(DomainErrorKind.Conflict);
 
-        context.VerifyKeyExistsOnce(command.ProduceDate, command.ManufactureEmail);
+        context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail);
         context.VerifyNotAdded();
         context.VerifyNotDeleted();
         context.VerifyProductMapNotUsed();

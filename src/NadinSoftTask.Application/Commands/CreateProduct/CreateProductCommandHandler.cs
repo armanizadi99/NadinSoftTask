@@ -22,8 +22,8 @@ public sealed class CreateProductCommandHandler(
             request.Name,
             new Phone(request.ManufacturePhone),
             new Email(request.ManufactureEmail),
-            request.IsAvailable,
-            request.ProduceDate).Value!;
+            request.IsAvailable!.Value,
+            request.ProduceDate!.Value).Value!;
 
         bool keyExists = await productRepository.ExistsByProduceDateAndEmailAsync(
             product.ProduceDate,

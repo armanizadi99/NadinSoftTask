@@ -27,7 +27,7 @@ public sealed class EditProductCommandHandler(
         Email manufactureEmail = new(request.ManufactureEmail);
 
         bool keyExists = await productRepository.ExistsByProduceDateAndEmailAsync(
-            request.ProduceDate,
+            request.ProduceDate!.Value,
             manufactureEmail,
             request.Id);
 
@@ -43,8 +43,8 @@ public sealed class EditProductCommandHandler(
             request.Name,
             new Phone(request.ManufacturePhone),
             manufactureEmail,
-            request.IsAvailable,
-            request.ProduceDate);
+            request.IsAvailable!.Value,
+            request.ProduceDate!.Value);
 
         if (updateResult.IsFailure)
         {

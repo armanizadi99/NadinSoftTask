@@ -69,4 +69,51 @@ public class ResultTests
 
         Should.Throw<ArgumentNullException>(() => _ = (Result<Email>)error!);
     }
+
+    [Fact]
+    public void GenericSuccess_WithValue_ReturnsSuccessAndKeepsValue()
+    {
+        Email email = new("owner@acme.com");
+
+        Result<Email> result = Result<Email>.Success(email);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBeSameAs(email);
+        result.Error.ShouldBeSameAs(DomainError.None);
+    }
+
+    [Fact]
+    public void Failure_WithDomainError_ReturnsFailure()
+    {
+        DomainError error = new("Boom", DomainErrorKind.Validation);
+
+        Result result = Result.Failure(error);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeSameAs(error);
+    }
+
+    [Fact]
+    public void Failure_WithNullDomainError_Throws()
+    {
+        Should.Throw<ArgumentNullException>(() => Result.Failure(null!));
+    }
+
+    [Fact]
+    public void GenericFailure_WithDomainError_ReturnsFailureWithDefaultValue()
+    {
+        DomainError error = new("Boom", DomainErrorKind.Validation);
+
+        Result<Email> result = Result<Email>.Failure(error);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Value.ShouldBeNull();
+        result.Error.ShouldBeSameAs(error);
+    }
+
+    [Fact]
+    public void GenericFailure_WithNullDomainError_Throws()
+    {
+        Should.Throw<ArgumentNullException>(() => Result<Email>.Failure(null!));
+    }
 }
