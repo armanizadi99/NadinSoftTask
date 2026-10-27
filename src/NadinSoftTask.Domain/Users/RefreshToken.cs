@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace NadinSoftTask.Domain.Users;
 
 public sealed class RefreshToken
@@ -19,15 +22,18 @@ public sealed class RefreshToken
         }
 
         Token = token;
+        TokenHash = HashToken(token);
         UserId = userId;
-        ExpiresAt = expiresAt;
-        CreatedAt = DateTime.UtcNow;
-        IsRevoked = false;
+        ExpiresAt = NormalizeUtc(expiresAt);
+        CreatedAt = NormalizeUtc(DateTime.UtcNow);
     }
 
     public int Id { get; private set; }
 
+    // The raw token is returned to the client and never persisted; only its hash is stored.
     public string Token { get; private set; } = null!;
+
+    public byte[] TokenHash { get; private set; } = null!;
 
     public string UserId { get; private set; } = null!;
 
@@ -35,21 +41,44 @@ public sealed class RefreshToken
 
     public DateTime CreatedAt { get; private set; }
 
-    public bool IsRevoked { get; private set; }
+    public bool IsRevoked => RevokedAt.HasValue;
 
     public DateTime? RevokedAt { get; private set; }
 
+    public static byte[] HashToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new ArgumentException("Refresh token cannot be empty or whitespace.", nameof(token));
+        }
+
+        return SHA256.HashData(Encoding.UTF8.GetBytes(token));
+    }
+
     public void Revoke()
     {
-        if (IsRevoked)
+        if (RevokedAt.HasValue)
         {
             return;
         }
 
-        IsRevoked = true;
-        RevokedAt = DateTime.UtcNow;
+        RevokedAt = NormalizeUtc(DateTime.UtcNow);
     }
 
     public bool IsActive(DateTime now) =>
         !IsRevoked && ExpiresAt > now;
+
+    private static DateTime NormalizeUtc(DateTime value)
+    {
+        DateTime utc = value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+
+        return new DateTime(
+            utc.Ticks - (utc.Ticks % TimeSpan.TicksPerMinute),
+            DateTimeKind.Utc);
+    }
 }

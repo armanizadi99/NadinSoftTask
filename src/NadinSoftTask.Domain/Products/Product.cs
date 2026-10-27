@@ -1,3 +1,4 @@
+using System.Text;
 using NadinSoftTask.Domain.Common;
 
 namespace NadinSoftTask.Domain.Products;
@@ -103,6 +104,13 @@ public sealed class Product
         {
             throw new ArgumentException(
                 $"Product name length must be between {ProductConstraints.MinNameLength} and {ProductConstraints.MaxNameLength} characters.",
+                nameof(name));
+        }
+
+        if (Encoding.UTF8.GetByteCount(name) > ProductConstraints.MaxNameUtf8Bytes)
+        {
+            throw new ArgumentException(
+                $"Product name must be at most {ProductConstraints.MaxNameUtf8Bytes} UTF-8 bytes.",
                 nameof(name));
         }
 

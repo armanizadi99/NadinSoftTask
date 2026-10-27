@@ -19,7 +19,7 @@ public class RefreshTokenCommandHandlerTests
             expiresAt: DateTime.UtcNow.AddMinutes(5));
         RefreshTokenCommand command = new(storedRefreshToken.Token);
         AuthTestContext context = new();
-        DateTime newRefreshTokenExpiresAt = DateTime.UtcNow.AddMinutes(10);
+        DateTime newRefreshTokenExpiresAt = TruncateToMinute(DateTime.UtcNow.AddMinutes(10));
 
         context.GivenStoredRefreshToken(command.RefreshToken, storedRefreshToken);
         context.GivenUserById(user.Id, user);
@@ -176,4 +176,9 @@ public class RefreshTokenCommandHandlerTests
             context.UserRepository.Object,
             context.TokenService.Object,
             context.UnitOfWork.Object);
+
+    private static DateTime TruncateToMinute(DateTime value) =>
+        new(
+            value.Ticks - (value.Ticks % TimeSpan.TicksPerMinute),
+            DateTimeKind.Utc);
 }

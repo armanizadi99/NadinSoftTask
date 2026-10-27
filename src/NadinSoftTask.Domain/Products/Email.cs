@@ -1,4 +1,5 @@
 using System.Net.Mail;
+using System.Text;
 
 namespace NadinSoftTask.Domain.Products;
 
@@ -22,6 +23,11 @@ public sealed record Email
     public static bool IsValid(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (Encoding.UTF8.GetByteCount(value) > ProductConstraints.MaxEmailUtf8Bytes)
         {
             return false;
         }

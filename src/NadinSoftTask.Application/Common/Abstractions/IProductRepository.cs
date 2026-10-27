@@ -20,5 +20,5 @@ public interface IProductRepository
 
     Task AddAsync(Product product, CancellationToken cancellationToken = default);
 
-    Task DeleteAsync(Product product, CancellationToken cancellationToken = default);
+    void Delete(Product product);
 }

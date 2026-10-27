@@ -58,6 +58,14 @@ public class EmailTests
         Email.IsValid(value).ShouldBeTrue();
     }
 
+    [Fact]
+    public void IsValid_WithEmailExceedingUtf8ByteLimit_ReturnsFalse()
+    {
+        string value = new string('é', 150) + "@example.com";
+
+        Email.IsValid(value).ShouldBeFalse();
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

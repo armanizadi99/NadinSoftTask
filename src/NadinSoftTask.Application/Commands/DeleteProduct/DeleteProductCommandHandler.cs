@@ -28,7 +28,7 @@ public sealed class DeleteProductCommandHandler(
                 DomainErrorKind.NotAuthorized);
         }
 
-        await productRepository.DeleteAsync(product);
+        productRepository.Delete(product);
         await unitOfWork.SaveChangesAsync();
 
         return Result.Success;

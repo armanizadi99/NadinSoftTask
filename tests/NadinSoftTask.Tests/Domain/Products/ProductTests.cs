@@ -69,6 +69,29 @@ public class ProductTests
         exception.ParamName.ShouldBe("name");
     }
 
+    [Fact]
+    public void Create_WithMaxLengthPersianName_Succeeds()
+    {
+        string name = new('ا', ProductConstraints.MaxNameLength);
+
+        Result<Product> result = Product.Create(ValidOwnerId, name, ValidPhone, ValidEmail, true, ValidProduceDate);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value!.Name.ShouldBe(name);
+    }
+
+    [Fact]
+    public void Create_WithNameExceedingUtf8ByteLimit_Throws()
+    {
+        string name = new('あ', 101);
+
+        ArgumentException exception = Should.Throw<ArgumentException>(
+            () => _ = Product.Create(ValidOwnerId, name, ValidPhone, ValidEmail, true, ValidProduceDate));
+
+        exception.ParamName.ShouldBe("name");
+        exception.Message.ShouldContain(ProductConstraints.MaxNameUtf8Bytes.ToString());
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

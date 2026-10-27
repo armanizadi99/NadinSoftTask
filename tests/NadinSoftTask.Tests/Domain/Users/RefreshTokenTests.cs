@@ -42,6 +42,39 @@ public class RefreshTokenTests
         refreshToken.RevokedAt.ShouldNotBeNull();
     }
 
+    [Fact]
+    public void Constructor_ComputesSha256TokenHash()
+    {
+        RefreshToken refreshToken = new("token", "user-1", DateTime.UtcNow.AddMinutes(5));
+
+        refreshToken.TokenHash.Length.ShouldBe(32);
+        refreshToken.TokenHash.ShouldBe(RefreshToken.HashToken("token"));
+        refreshToken.TokenHash.ShouldNotBe(RefreshToken.HashToken("other-token"));
+    }
+
+    [Fact]
+    public void Constructor_TruncatesTimestampsToMinute()
+    {
+        DateTime expiresAt = new(2026, 1, 15, 12, 30, 45, 123, DateTimeKind.Utc);
+
+        RefreshToken refreshToken = new("token", "user-1", expiresAt);
+
+        refreshToken.ExpiresAt.ShouldBe(new DateTime(2026, 1, 15, 12, 30, 0, DateTimeKind.Utc));
+        refreshToken.CreatedAt.Second.ShouldBe(0);
+        refreshToken.CreatedAt.Millisecond.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Revoke_TruncatesRevokedAtToMinute()
+    {
+        RefreshToken refreshToken = new("token", "user-1", DateTime.UtcNow.AddMinutes(5));
+
+        refreshToken.Revoke();
+
+        refreshToken.RevokedAt!.Value.Second.ShouldBe(0);
+        refreshToken.RevokedAt.Value.Millisecond.ShouldBe(0);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

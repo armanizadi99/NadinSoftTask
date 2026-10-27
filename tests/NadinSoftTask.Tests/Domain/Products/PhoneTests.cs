@@ -19,6 +19,17 @@ public class PhoneTests
     }
 
     [Theory]
+    [InlineData("+1 (555)")]
+    [InlineData("۱۲۳۴")]
+    [InlineData("phone")]
+    public void Constructor_WithNonDigitCharacters_SetsValue(string value)
+    {
+        Phone phone = new(value);
+
+        phone.Value.ShouldBe(value);
+    }
+
+    [Theory]
     [InlineData("123")]
     [InlineData("123456789012345")]
     public void Constructor_WithInvalidLength_Throws(string value)

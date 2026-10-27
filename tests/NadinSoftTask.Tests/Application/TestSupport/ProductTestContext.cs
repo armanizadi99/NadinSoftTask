@@ -60,10 +60,8 @@ internal sealed class ProductTestContext
 
     public void GivenDelete(Product product) =>
         ProductRepository
-            .Setup(repository => repository.DeleteAsync(
-                It.Is<Product>(candidate => candidate.Id == product.Id),
-                It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .Setup(repository => repository.Delete(
+                It.Is<Product>(candidate => candidate.Id == product.Id)));
 
     public void GivenListAll(IReadOnlyList<Product> products) =>
         ProductRepository
@@ -132,12 +130,12 @@ internal sealed class ProductTestContext
 
     public void VerifyDeletedOnce() =>
         ProductRepository.Verify(
-            repository => repository.DeleteAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()),
+            repository => repository.Delete(It.IsAny<Product>()),
             Times.Once);
 
     public void VerifyNotDeleted() =>
         ProductRepository.Verify(
-            repository => repository.DeleteAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()),
+            repository => repository.Delete(It.IsAny<Product>()),
             Times.Never);
 
     public void VerifySavedOnce() =>

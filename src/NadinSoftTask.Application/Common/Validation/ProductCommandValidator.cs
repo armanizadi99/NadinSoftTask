@@ -1,3 +1,4 @@
+using System.Text;
 using FluentValidation;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Domain.Products;
@@ -15,7 +16,10 @@ public abstract class ProductCommandValidator<T> : AbstractValidator<T>
             .WithMessage("Product name cannot be empty or whitespace.")
             .Length(ProductConstraints.MinNameLength, ProductConstraints.MaxNameLength)
             .WithMessage(
-                $"Product name length must be between {ProductConstraints.MinNameLength} and {ProductConstraints.MaxNameLength} characters.");
+                $"Product name length must be between {ProductConstraints.MinNameLength} and {ProductConstraints.MaxNameLength} characters.")
+            .Must(name => Encoding.UTF8.GetByteCount(name) <= ProductConstraints.MaxNameUtf8Bytes)
+            .WithMessage(
+                $"Product name must be at most {ProductConstraints.MaxNameUtf8Bytes} UTF-8 bytes.");
 
         RuleFor(command => command.ManufacturePhone)
             .Cascade(CascadeMode.Stop)
