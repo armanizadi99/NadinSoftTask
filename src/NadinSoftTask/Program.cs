@@ -23,6 +23,11 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
     await dbContext.Database.MigrateAsync();
 }
 
-app.MapGet("/", () => "Hello World!");
+app.UseApiDocumentation();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();
