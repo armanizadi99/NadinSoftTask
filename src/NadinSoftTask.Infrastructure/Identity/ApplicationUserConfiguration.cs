@@ -22,14 +22,18 @@ public sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Appl
             builder.Metadata.RemoveIndex(emailIndex);
         }
 
-        // Identity maps email, phone and 2FA by default. This application authenticates
-        // by username only, so those unused columns are removed from the model.
+        // Identity maps email, phone, 2FA and lockout by default. This application
+        // authenticates by username only and does not use lockout, so those unused
+        // columns are removed from the model.
         builder.Ignore(user => user.Email);
         builder.Ignore(user => user.NormalizedEmail);
         builder.Ignore(user => user.EmailConfirmed);
         builder.Ignore(user => user.PhoneNumber);
         builder.Ignore(user => user.PhoneNumberConfirmed);
         builder.Ignore(user => user.TwoFactorEnabled);
+        builder.Ignore(user => user.LockoutEnd);
+        builder.Ignore(user => user.LockoutEnabled);
+        builder.Ignore(user => user.AccessFailedCount);
 
         builder.Property(user => user.UserName)
             .HasMaxLength(UserConstraints.MaxUsernameLength)
@@ -52,14 +56,5 @@ public sealed class ApplicationUserConfiguration : IEntityTypeConfiguration<Appl
         builder.Property(user => user.ConcurrencyStamp)
             .HasMaxLength(36)
             .HasColumnType("varchar(36)");
-
-        builder.Property(user => user.LockoutEnd)
-            .HasColumnType("datetimeoffset(0)");
-
-        builder.Property(user => user.LockoutEnabled)
-            .HasColumnType("bit");
-
-        builder.Property(user => user.AccessFailedCount)
-            .HasColumnType("int");
     }
 }
