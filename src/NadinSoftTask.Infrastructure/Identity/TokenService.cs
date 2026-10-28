@@ -140,5 +140,5 @@ public sealed class TokenService(
             DateTimeKind.Utc);
 
     private static DomainError InvalidRefreshToken() =>
-        new("Invalid refresh token.", DomainErrorKind.NotAuthorized);
+        new("Invalid refresh token.", DomainErrorKind.Unauthorized);
 }

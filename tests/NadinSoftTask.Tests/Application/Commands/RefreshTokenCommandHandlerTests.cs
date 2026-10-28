@@ -31,11 +31,11 @@ public class RefreshTokenCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenRefreshTokenIsRejected_PropagatesNotAuthorized()
+    public async Task Handle_WhenRefreshTokenIsRejected_PropagatesUnauthorized()
     {
         RefreshTokenCommand command = new(AuthTestData.RefreshToken);
         AuthTestContext context = new();
-        DomainError error = new("Invalid refresh token.", DomainErrorKind.NotAuthorized);
+        DomainError error = new("Invalid refresh token.", DomainErrorKind.Unauthorized);
 
         context.GivenRefreshTokens(
             command.RefreshToken,

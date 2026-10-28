@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NadinSoftTask.Api.Contracts.Auth;
-using NadinSoftTask.Api.Filters;
 using NadinSoftTask.Application.Commands.Login;
 using NadinSoftTask.Application.Commands.RefreshTokens;
 using NadinSoftTask.Application.Commands.RegisterUser;
@@ -24,7 +23,6 @@ namespace NadinSoftTask.Api.Controllers;
 [Route("api/auth")]
 [Consumes("application/json")]
 [AllowAnonymous]
-[MapNotAuthorizedAsUnauthorized]
 public sealed class AuthController(IMediator mediator) : ControllerBase
 {
     /// <summary>

@@ -84,6 +84,7 @@ public class ResultMappingFilterTests
     [Theory]
     [InlineData(DomainErrorKind.NotFound, StatusCodes.Status404NotFound)]
     [InlineData(DomainErrorKind.Conflict, StatusCodes.Status409Conflict)]
+    [InlineData(DomainErrorKind.Unauthorized, StatusCodes.Status401Unauthorized)]
     [InlineData(DomainErrorKind.NotAuthorized, StatusCodes.Status403Forbidden)]
     public void OnResultExecuting_WhenNonValidationErrorFails_MapsStatusAndProblemDetails(
         DomainErrorKind kind,
@@ -106,22 +107,6 @@ public class ResultMappingFilterTests
         problem.Detail.ShouldBe(error.Message);
         problem.Extensions["errorKind"].ShouldBe(kind.ToString());
         problem.Extensions["traceId"].ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void OnResultExecuting_WhenNotAuthorizedAndMarkedAsUnauthorized_Returns401()
-    {
-        using ServiceProvider provider = CreateServiceProvider();
-        ResultMappingFilter filter = CreateFilter(provider);
-        Result result = new DomainError("Invalid credentials.", DomainErrorKind.NotAuthorized);
-        ResultExecutingContext context = CreateContext(
-            new OkObjectResult(result),
-            new List<object> { new MapNotAuthorizedAsUnauthorizedAttribute() });
-
-        filter.OnResultExecuting(context);
-
-        ObjectResult objectResult = context.Result.ShouldBeOfType<ObjectResult>();
-        objectResult.StatusCode.ShouldBe(StatusCodes.Status401Unauthorized);
     }
 
     [Fact]
@@ -149,9 +134,7 @@ public class ResultMappingFilterTests
     private static ResultMappingFilter CreateFilter(ServiceProvider provider) =>
         new(provider.GetRequiredService<ProblemDetailsFactory>());
 
-    private static ResultExecutingContext CreateContext(
-        IActionResult result,
-        IList<object>? endpointMetadata = null)
+    private static ResultExecutingContext CreateContext(IActionResult result)
     {
         DefaultHttpContext httpContext = new();
         httpContext.Request.Path = "/api/products";
@@ -159,10 +142,7 @@ public class ResultMappingFilterTests
         ActionContext actionContext = new(
             httpContext,
             new RouteData(),
-            new ActionDescriptor
-            {
-                EndpointMetadata = endpointMetadata ?? new List<object>()
-            });
+            new ActionDescriptor());
 
         return new ResultExecutingContext(
             actionContext,

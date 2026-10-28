@@ -36,7 +36,7 @@ public class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenUsernameDoesNotExist_ReturnsNotAuthorizedAndDoesNotIssueTokens()
+    public async Task Handle_WhenUsernameDoesNotExist_ReturnsUnauthorizedAndDoesNotIssueTokens()
     {
         LoginCommand command = new(AuthTestData.Username, AuthTestData.Password);
         AuthTestContext context = new();
@@ -49,7 +49,7 @@ public class LoginCommandHandlerTests
 
         result.IsFailure.ShouldBeTrue();
         result.Value.ShouldBeNull();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.VerifyUserLookupOnce(command.Username);
         context.VerifyPasswordNotChecked();
@@ -57,7 +57,7 @@ public class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenPasswordIsInvalid_ReturnsNotAuthorizedAndDoesNotIssueTokens()
+    public async Task Handle_WhenPasswordIsInvalid_ReturnsUnauthorizedAndDoesNotIssueTokens()
     {
         LoginCommand command = new(AuthTestData.Username, AuthTestData.Password);
         AuthTestContext context = new();
@@ -72,7 +72,7 @@ public class LoginCommandHandlerTests
 
         result.IsFailure.ShouldBeTrue();
         result.Value.ShouldBeNull();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.VerifyUserLookupOnce(command.Username);
         context.VerifyPasswordCheckedOnce(user.Id, command.Password);

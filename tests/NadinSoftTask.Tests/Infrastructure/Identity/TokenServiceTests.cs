@@ -142,7 +142,7 @@ public class TokenServiceTests
     }
 
     [Fact]
-    public async Task RefreshTokensAsync_WhenTokenDoesNotExist_ReturnsNotAuthorized()
+    public async Task RefreshTokensAsync_WhenTokenDoesNotExist_ReturnsUnauthorized()
     {
         TestContext context = new();
 
@@ -158,7 +158,7 @@ public class TokenServiceTests
 
         result.IsFailure.ShouldBeTrue();
         result.Value.ShouldBeNull();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.Store.Verify(
             store => store.AddAsync(
@@ -176,7 +176,7 @@ public class TokenServiceTests
     }
 
     [Fact]
-    public async Task RefreshTokensAsync_WhenTokenIsExpired_ReturnsNotAuthorized()
+    public async Task RefreshTokensAsync_WhenTokenIsExpired_ReturnsUnauthorized()
     {
         TestContext context = new();
 
@@ -193,7 +193,7 @@ public class TokenServiceTests
             CancellationToken.None);
 
         result.IsFailure.ShouldBeTrue();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.Store.Verify(
             store => store.AddAsync(
@@ -206,7 +206,7 @@ public class TokenServiceTests
     }
 
     [Fact]
-    public async Task RefreshTokensAsync_WhenTokenIsRevoked_ReturnsNotAuthorized()
+    public async Task RefreshTokensAsync_WhenTokenIsRevoked_ReturnsUnauthorized()
     {
         TestContext context = new();
         RefreshToken storedRefreshToken = CreateToken(
@@ -226,7 +226,7 @@ public class TokenServiceTests
             CancellationToken.None);
 
         result.IsFailure.ShouldBeTrue();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.Store.Verify(
             store => store.AddAsync(
@@ -239,7 +239,7 @@ public class TokenServiceTests
     }
 
     [Fact]
-    public async Task RefreshTokensAsync_WhenUserNoLongerExists_ReturnsNotAuthorized()
+    public async Task RefreshTokensAsync_WhenUserNoLongerExists_ReturnsUnauthorized()
     {
         TestContext context = new();
 
@@ -261,7 +261,7 @@ public class TokenServiceTests
             CancellationToken.None);
 
         result.IsFailure.ShouldBeTrue();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.Store.Verify(
             store => store.AddAsync(
@@ -276,7 +276,7 @@ public class TokenServiceTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task RefreshTokensAsync_WithMissingToken_ReturnsNotAuthorized(string refreshToken)
+    public async Task RefreshTokensAsync_WithMissingToken_ReturnsUnauthorized(string refreshToken)
     {
         TestContext context = new();
 
@@ -285,7 +285,7 @@ public class TokenServiceTests
             CancellationToken.None);
 
         result.IsFailure.ShouldBeTrue();
-        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+        result.Error.Kind.ShouldBe(DomainErrorKind.Unauthorized);
 
         context.Store.Verify(
             store => store.GetByTokenAsync(

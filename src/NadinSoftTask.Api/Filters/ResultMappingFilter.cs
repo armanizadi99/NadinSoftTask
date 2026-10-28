@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.WebUtilities;
@@ -43,7 +42,6 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
         {
             context.Result = CreateProblemResult(
                 context.HttpContext,
-                context.ActionDescriptor,
                 snapshot.Error);
 
             return;
@@ -75,10 +73,9 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
 
     private ObjectResult CreateProblemResult(
         HttpContext httpContext,
-        ActionDescriptor actionDescriptor,
         DomainError error)
     {
-        int statusCode = MapStatusCode(error.Kind, actionDescriptor);
+        int statusCode = MapStatusCode(error.Kind);
 
         ProblemDetails problemDetails;
 
@@ -116,20 +113,14 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
         };
     }
 
-    private static int MapStatusCode(
-        DomainErrorKind kind,
-        ActionDescriptor actionDescriptor) =>
+    private static int MapStatusCode(DomainErrorKind kind) =>
         kind switch
         {
             DomainErrorKind.Validation => StatusCodes.Status400BadRequest,
+            DomainErrorKind.Unauthorized => StatusCodes.Status401Unauthorized,
+            DomainErrorKind.NotAuthorized => StatusCodes.Status403Forbidden,
             DomainErrorKind.NotFound => StatusCodes.Status404NotFound,
             DomainErrorKind.Conflict => StatusCodes.Status409Conflict,
-            DomainErrorKind.NotAuthorized =>
-                actionDescriptor.EndpointMetadata
-                    .OfType<MapNotAuthorizedAsUnauthorizedAttribute>()
-                    .Any()
-                    ? StatusCodes.Status401Unauthorized
-                    : StatusCodes.Status403Forbidden,
             _ => StatusCodes.Status500InternalServerError
         };
 

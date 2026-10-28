@@ -39,5 +39,5 @@ public sealed class LoginCommandHandler(
     }
 
     private static DomainError InvalidCredentials() =>
-        new("Invalid username or password.", DomainErrorKind.NotAuthorized);
+        new("Invalid username or password.", DomainErrorKind.Unauthorized);
 }
