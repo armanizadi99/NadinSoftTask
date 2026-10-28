@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
@@ -8,6 +9,13 @@ namespace NadinSoftTask.Infrastructure.Identity;
 
 public sealed class UserRepository(UserManager<ApplicationUser> userManager) : IUserRepository
 {
+    // SQL Server reports duplicate rows in a unique index (2601) and unique
+    // constraint violations (2627). Identity enforces username uniqueness with
+    // the UserNameIndex on NormalizedUserName.
+    private const int DuplicateKeyRowErrorNumber = 2601;
+    private const int UniqueConstraintViolationErrorNumber = 2627;
+    private const string UserNameIndexName = "UserNameIndex";
+
     public async Task<Result<UserDto>> CreateAsync(
         string username,
         string password,
@@ -21,7 +29,7 @@ public sealed class UserRepository(UserManager<ApplicationUser> userManager) : I
         {
             result = await userManager.CreateAsync(user, password);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException exception) when (IsDuplicateUsername(exception))
         {
             return DuplicateUsername();
         }
@@ -85,6 +93,26 @@ public sealed class UserRepository(UserManager<ApplicationUser> userManager) : I
 
     private static UserDto ToDto(ApplicationUser user) =>
         new(user.Id.ToString(), user.UserName!);
+
+    private static bool IsDuplicateUsername(DbUpdateException exception)
+    {
+        for (Exception? current = exception.InnerException;
+             current is not null;
+             current = current.InnerException)
+        {
+            if (current is SqlException sqlException &&
+                sqlException.Number is
+                    DuplicateKeyRowErrorNumber or UniqueConstraintViolationErrorNumber &&
+                sqlException.Message.Contains(
+                    $"'{UserNameIndexName}'",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static DomainError DuplicateUsername() =>
         new("Username is already taken.", DomainErrorKind.Conflict);
