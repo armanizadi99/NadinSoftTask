@@ -32,29 +32,25 @@ public class LoginCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_WithTooShortUsername_HasUsernameError()
+    public void Validate_WithUsernameShorterThanRegistrationLimit_HasNoErrors()
     {
         string username = new('a', UserConstraints.MinUsernameLength - 1);
 
         TestValidationResult<LoginCommand> result =
             _validator.TestValidate(CreateCommand(username: username));
 
-        result.ShouldHaveValidationErrorFor(command => command.Username)
-            .WithErrorMessage(
-                $"Username length must be between {UserConstraints.MinUsernameLength} and {UserConstraints.MaxUsernameLength} characters.");
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Fact]
-    public void Validate_WithTooLongUsername_HasUsernameError()
+    public void Validate_WithUsernameLongerThanRegistrationLimit_HasNoErrors()
     {
         string username = new('a', UserConstraints.MaxUsernameLength + 1);
 
         TestValidationResult<LoginCommand> result =
             _validator.TestValidate(CreateCommand(username: username));
 
-        result.ShouldHaveValidationErrorFor(command => command.Username)
-            .WithErrorMessage(
-                $"Username length must be between {UserConstraints.MinUsernameLength} and {UserConstraints.MaxUsernameLength} characters.");
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Theory]
@@ -62,13 +58,12 @@ public class LoginCommandValidatorTests
     [InlineData("user-name")]
     [InlineData("user.name")]
     [InlineData("user@name")]
-    public void Validate_WithInvalidUsernameCharacters_HasUsernameError(string username)
+    public void Validate_WithUsernameCharactersRejectedAtRegistration_HasNoErrors(string username)
     {
         TestValidationResult<LoginCommand> result =
             _validator.TestValidate(CreateCommand(username: username));
 
-        result.ShouldHaveValidationErrorFor(command => command.Username)
-            .WithErrorMessage("Username can only contain letters, numbers, and underscores.");
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Theory]
@@ -85,29 +80,25 @@ public class LoginCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_WithTooShortPassword_HasPasswordError()
+    public void Validate_WithPasswordShorterThanRegistrationLimit_HasNoErrors()
     {
         string password = new('a', UserConstraints.MinPasswordLength - 1);
 
         TestValidationResult<LoginCommand> result =
             _validator.TestValidate(CreateCommand(password: password));
 
-        result.ShouldHaveValidationErrorFor(command => command.Password)
-            .WithErrorMessage(
-                $"Password length must be between {UserConstraints.MinPasswordLength} and {UserConstraints.MaxPasswordLength} characters.");
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     [Fact]
-    public void Validate_WithTooLongPassword_HasPasswordError()
+    public void Validate_WithPasswordLongerThanRegistrationLimit_HasNoErrors()
     {
         string password = new('a', UserConstraints.MaxPasswordLength + 1);
 
         TestValidationResult<LoginCommand> result =
             _validator.TestValidate(CreateCommand(password: password));
 
-        result.ShouldHaveValidationErrorFor(command => command.Password)
-            .WithErrorMessage(
-                $"Password length must be between {UserConstraints.MinPasswordLength} and {UserConstraints.MaxPasswordLength} characters.");
+        result.ShouldNotHaveAnyValidationErrors();
     }
 
     private static LoginCommand CreateCommand(
