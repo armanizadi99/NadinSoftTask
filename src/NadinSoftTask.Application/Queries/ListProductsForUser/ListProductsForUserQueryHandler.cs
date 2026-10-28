@@ -8,6 +8,7 @@ using NadinSoftTask.Domain.Products;
 namespace NadinSoftTask.Application.Queries.ListProductsForUser;
 
 public sealed class ListProductsForUserQueryHandler(
+    IUserRepository userRepository,
     IProductRepository productRepository,
     IMapper mapper) : IRequestHandler<ListProductsForUserQuery, Result<IReadOnlyList<ProductDto>>>
 {
@@ -15,6 +16,13 @@ public sealed class ListProductsForUserQueryHandler(
         ListProductsForUserQuery request,
         CancellationToken cancellationToken)
     {
+        UserDto? user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
+
+        if (user is null)
+        {
+            return new DomainError("User was not found.", DomainErrorKind.NotFound);
+        }
+
         IReadOnlyList<Product> products = await productRepository.ListByOwnerAsync(
             request.UserId,
             cancellationToken);

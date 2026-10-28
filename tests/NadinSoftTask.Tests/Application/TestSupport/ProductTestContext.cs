@@ -25,7 +25,19 @@ internal sealed class ProductTestContext
 
     public Mock<IProductRepository> ProductRepository { get; } = new(MockBehavior.Strict);
 
+    public Mock<IUserRepository> UserRepository { get; } = new(MockBehavior.Strict);
+
     public Mock<IUnitOfWork> UnitOfWork { get; } = new(MockBehavior.Strict);
+
+    public void GivenUser(string userId) =>
+        UserRepository
+            .Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserDto(userId, "test-user"));
+
+    public void GivenMissingUser(string userId) =>
+        UserRepository
+            .Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserDto?)null);
 
     public void GivenProduct(Product product) =>
         ProductRepository
@@ -163,13 +175,30 @@ internal sealed class ProductTestContext
             mapper => mapper.Map<IReadOnlyList<ProductDto>>(It.IsAny<object>()),
             Times.Once);
 
+    public void VerifyListMapNotUsed() =>
+        Mapper.Verify(
+            mapper => mapper.Map<IReadOnlyList<ProductDto>>(It.IsAny<object>()),
+            Times.Never);
+
     public void VerifyListAllOnce() =>
         ProductRepository.Verify(
             repository => repository.ListAllAsync(CancellationToken),
+            Times.Once);
+
+    public void VerifyUserLookupOnce(string userId) =>
+        UserRepository.Verify(
+            repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>()),
             Times.Once);
 
     public void VerifyListByOwnerOnce(string userId) =>
         ProductRepository.Verify(
             repository => repository.ListByOwnerAsync(userId, CancellationToken),
             Times.Once);
+
+    public void VerifyListByOwnerNever() =>
+        ProductRepository.Verify(
+            repository => repository.ListByOwnerAsync(
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
 }

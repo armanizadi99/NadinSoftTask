@@ -29,6 +29,7 @@ public class ListProductsForUserQueryHandlerTests
             products.Select(product => ProductDtoFactory.From(product)).ToList();
 
         ProductTestContext context = new();
+        context.GivenUser(query.UserId);
         context.GivenListByOwner(query.UserId, products);
         context.GivenListMap(expectedDtos, source => source.SequenceEqual(products));
 
@@ -40,6 +41,7 @@ public class ListProductsForUserQueryHandlerTests
         result.Error.ShouldBeSameAs(DomainError.None);
         result.Value.ShouldBe(expectedDtos);
 
+        context.VerifyUserLookupOnce(query.UserId);
         context.VerifyListByOwnerOnce(query.UserId);
         context.VerifyListMapUsedOnce();
     }
@@ -61,6 +63,7 @@ public class ListProductsForUserQueryHandlerTests
         ProductDto expectedDto = ProductDtoFactory.From(ownerProduct);
 
         ProductTestContext context = new();
+        context.GivenUser(query.UserId);
         context.GivenListByOwner(
             query.UserId,
             (ownerId, _) => allProducts.Where(product => product.OwnerId == ownerId).ToList());
@@ -77,6 +80,7 @@ public class ListProductsForUserQueryHandlerTests
         result.Value.ShouldHaveSingleItem().ShouldBe(expectedDto);
         result.Value.ShouldNotContain(dto => dto.OwnerId == ProductTestData.OtherOwnerId);
 
+        context.VerifyUserLookupOnce(query.UserId);
         context.VerifyListByOwnerOnce(query.UserId);
         context.VerifyListMapUsedOnce();
     }
@@ -90,6 +94,7 @@ public class ListProductsForUserQueryHandlerTests
         IReadOnlyList<ProductDto> expectedDtos = [];
 
         ProductTestContext context = new();
+        context.GivenUser(query.UserId);
         context.GivenListByOwner(query.UserId, products);
         context.GivenListMap(expectedDtos, source => source.Count == 0);
 
@@ -101,12 +106,35 @@ public class ListProductsForUserQueryHandlerTests
         result.Value.ShouldNotBeNull();
         result.Value.ShouldBeEmpty();
 
+        context.VerifyUserLookupOnce(query.UserId);
         context.VerifyListByOwnerOnce(query.UserId);
         context.VerifyListMapUsedOnce();
     }
 
+    [Fact]
+    public async Task Handle_WhenUserDoesNotExist_ReturnsNotFound()
+    {
+        ListProductsForUserQuery query = new("missing-user");
+
+        ProductTestContext context = new();
+        context.GivenMissingUser(query.UserId);
+
+        Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
+            query,
+            context.CancellationToken);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Value.ShouldBeNull();
+        result.Error.Kind.ShouldBe(DomainErrorKind.NotFound);
+
+        context.VerifyUserLookupOnce(query.UserId);
+        context.VerifyListByOwnerNever();
+        context.VerifyListMapNotUsed();
+    }
+
     private static ListProductsForUserQueryHandler CreateHandler(ProductTestContext context) =>
         new(
+            context.UserRepository.Object,
             context.ProductRepository.Object,
             context.Mapper.Object);
 }

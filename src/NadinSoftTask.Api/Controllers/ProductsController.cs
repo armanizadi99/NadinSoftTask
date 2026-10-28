@@ -51,18 +51,17 @@ public sealed class ProductsController(IMediator mediator) : ControllerBase
     /// </summary>
     /// <remarks>
     /// This endpoint is anonymous. The user id is a GUID. A malformed user id does not match
-    /// the route and returns 404; a valid but unknown user id returns an empty list.
+    /// the route and returns 404; a valid but unknown user id also returns 404.
     /// </remarks>
     /// <param name="userId">The user id (GUID) whose products should be returned.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
-    /// <response code="200">The products owned by the requested user, or an empty list.</response>
-    /// <response code="404">The user id in the route is malformed.</response>
+    /// <response code="200">The products owned by the requested user, or an empty list when the user has no products.</response>
+    /// <response code="404">The user was not found, or the user id in the route is malformed.</response>
     /// <response code="500">An unexpected server error occurred.</response>
     [HttpGet("by-user/{userId:guid}")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<ProductDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesEmptyResponse(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetByUser(
         [FromRoute] Guid userId,
