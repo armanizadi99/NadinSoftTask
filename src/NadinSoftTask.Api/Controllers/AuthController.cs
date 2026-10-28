@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NadinSoftTask.Api.Contracts.Auth;
+using NadinSoftTask.Api.OpenApi;
 using NadinSoftTask.Application.Commands.Login;
 using NadinSoftTask.Application.Commands.RefreshTokens;
 using NadinSoftTask.Application.Commands.RegisterUser;
@@ -44,7 +45,8 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesEmptyResponse(StatusCodes.Status415UnsupportedMediaType)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequest request,
         CancellationToken cancellationToken)
@@ -75,7 +77,8 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesEmptyResponse(StatusCodes.Status415UnsupportedMediaType)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Login(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
@@ -106,7 +109,8 @@ public sealed class AuthController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesEmptyResponse(StatusCodes.Status415UnsupportedMediaType)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Refresh(
         [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)

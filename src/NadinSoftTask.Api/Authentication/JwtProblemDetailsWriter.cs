@@ -26,6 +26,7 @@ internal static class JwtProblemDetailsWriter
 
         ProblemDetails problemDetails = new()
         {
+            Type = "about:blank",
             Status = statusCode,
             Title = ReasonPhrases.GetReasonPhrase(statusCode),
             Detail = detail,

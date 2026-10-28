@@ -91,20 +91,6 @@ public sealed class ExampleSchemaFilter : ISchemaFilter
                 ["traceId"] = new OpenApiString("00-8a2b6f5c1d9e4a7b8c0d1e2f3a4b5c6d-1a2b3c4d5e6f7a8b-00")
             };
         }
-        else if (context.Type == typeof(ProblemDetails))
-        {
-            schema.Example = new OpenApiObject
-            {
-                ["type"] = new OpenApiString("about:blank"),
-                ["title"] = new OpenApiString("Conflict"),
-                ["status"] = new OpenApiInteger(409),
-                ["detail"] = new OpenApiString(
-                    "A product with the same produce date and manufacture email already exists."),
-                ["instance"] = new OpenApiString("/api/products"),
-                ["errorKind"] = new OpenApiString("Conflict"),
-                ["traceId"] = new OpenApiString("00-8a2b6f5c1d9e4a7b8c0d1e2f3a4b5c6d-1a2b3c4d5e6f7a8b-00")
-            };
-        }
     }
 
     private static OpenApiObject CreateProductExample() =>

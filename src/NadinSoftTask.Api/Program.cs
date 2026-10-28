@@ -23,6 +23,8 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
     await dbContext.Database.MigrateAsync();
 }
 
+app.UseExceptionHandler();
+
 app.UseApiDocumentation();
 app.UseAuthentication();
 app.UseAuthorization();
