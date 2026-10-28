@@ -1,10 +1,16 @@
+using NadinSoftTask.Application.Common.Dtos;
+using NadinSoftTask.Domain.Common;
+
 namespace NadinSoftTask.Application.Common.Abstractions;
 
 public interface ITokenService
 {
-    (string AccessToken, DateTime ExpiresAt) GenerateAccessToken(string userId, string username);
+    Task<Result<AuthResult>> GenerateTokensAsync(
+        string userId,
+        string userName,
+        CancellationToken cancellationToken = default);
 
-    string GenerateRefreshToken();
-
-    DateTime GetRefreshTokenExpiration();
+    Task<Result<AuthResult>> RefreshTokensAsync(
+        string refreshToken,
+        CancellationToken cancellationToken = default);
 }

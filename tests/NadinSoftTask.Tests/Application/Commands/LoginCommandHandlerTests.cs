@@ -11,26 +11,16 @@ namespace NadinSoftTask.Tests.Application.Commands;
 public class LoginCommandHandlerTests
 {
     [Fact]
-    public async Task Handle_WithValidCredentials_IssuesTokensPersistsRefreshTokenAndSaves()
+    public async Task Handle_WithValidCredentials_ReturnsIssuedTokens()
     {
         LoginCommand command = new(AuthTestData.Username, AuthTestData.Password);
         AuthTestContext context = new();
         UserDto user = AuthTestData.User;
+        AuthResult authResult = AuthTestData.CreateAuthResult();
 
         context.GivenUser(command.Username, user);
         context.GivenPasswordValidity(user.Id, command.Password, isValid: true);
-        context.GivenAccessToken(
-            user.Id,
-            user.Username,
-            AuthTestData.AccessToken,
-            AuthTestData.AccessTokenExpiresAt);
-        context.GivenRefreshToken(AuthTestData.RefreshToken);
-        context.GivenRefreshTokenExpiration(AuthTestData.RefreshTokenExpiresAt);
-        context.GivenAddSucceeds(refreshToken =>
-            refreshToken.Token == AuthTestData.RefreshToken &&
-            refreshToken.UserId == user.Id &&
-            refreshToken.ExpiresAt == AuthTestData.RefreshTokenExpiresAt &&
-            !refreshToken.IsRevoked);
+        context.GivenGenerateTokens(user.Id, user.Username, authResult);
 
         Result<AuthResult> result = await CreateHandler(context).Handle(
             command,
@@ -38,21 +28,11 @@ public class LoginCommandHandlerTests
 
         result.IsSuccess.ShouldBeTrue();
         result.Error.ShouldBeSameAs(DomainError.None);
-        result.Value.ShouldBe(new AuthResult(
-            AuthTestData.AccessToken,
-            AuthTestData.RefreshToken,
-            AuthTestData.AccessTokenExpiresAt,
-            AuthTestData.RefreshTokenExpiresAt,
-            user.Id,
-            user.Username));
+        result.Value.ShouldBe(authResult);
 
         context.VerifyUserLookupOnce(command.Username);
         context.VerifyPasswordCheckedOnce(user.Id, command.Password);
-        context.VerifyAccessTokenGeneratedOnce(user.Id, user.Username);
-        context.VerifyRefreshTokenGeneratedOnce();
-        context.VerifyRefreshTokenExpirationRequestedOnce();
-        context.VerifyRefreshTokenAddedOnce();
-        context.VerifySavedOnce();
+        context.VerifyGenerateTokensOnce(user.Id, user.Username);
     }
 
     [Fact]
@@ -73,11 +53,7 @@ public class LoginCommandHandlerTests
 
         context.VerifyUserLookupOnce(command.Username);
         context.VerifyPasswordNotChecked();
-        context.VerifyAccessTokenNotGenerated();
-        context.VerifyRefreshTokenNotGenerated();
-        context.VerifyRefreshTokenExpirationNotRequested();
-        context.VerifyNotAdded();
-        context.VerifyNotSaved();
+        context.VerifyGenerateTokensNotCalled();
     }
 
     [Fact]
@@ -100,17 +76,11 @@ public class LoginCommandHandlerTests
 
         context.VerifyUserLookupOnce(command.Username);
         context.VerifyPasswordCheckedOnce(user.Id, command.Password);
-        context.VerifyAccessTokenNotGenerated();
-        context.VerifyRefreshTokenNotGenerated();
-        context.VerifyRefreshTokenExpirationNotRequested();
-        context.VerifyNotAdded();
-        context.VerifyNotSaved();
+        context.VerifyGenerateTokensNotCalled();
     }
 
     private static LoginCommandHandler CreateHandler(AuthTestContext context) =>
         new(
             context.UserRepository.Object,
-            context.TokenService.Object,
-            context.RefreshTokenRepository.Object,
-            context.UnitOfWork.Object);
+            context.TokenService.Object);
 }

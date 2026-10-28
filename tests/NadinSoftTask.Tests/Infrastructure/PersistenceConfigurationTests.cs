@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using NadinSoftTask.Domain.Products;
-using NadinSoftTask.Domain.Users;
 using NadinSoftTask.Infrastructure.Identity;
 using NadinSoftTask.Infrastructure.Persistence;
 using Shouldly;
@@ -85,7 +84,6 @@ public class PersistenceConfigurationTests
         refreshToken.FindProperty(nameof(RefreshToken.ExpiresAt))!.GetColumnType().ShouldBe("smalldatetime");
         refreshToken.FindProperty(nameof(RefreshToken.CreatedAt))!.GetColumnType().ShouldBe("smalldatetime");
         refreshToken.FindProperty(nameof(RefreshToken.RevokedAt))!.GetColumnType().ShouldBe("smalldatetime");
-        refreshToken.FindProperty(nameof(RefreshToken.Token)).ShouldBeNull();
         refreshToken.FindProperty(nameof(RefreshToken.IsRevoked)).ShouldBeNull();
     }
 

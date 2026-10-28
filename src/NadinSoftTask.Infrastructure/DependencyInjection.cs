@@ -7,7 +7,6 @@ using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Infrastructure.Identity;
 using NadinSoftTask.Infrastructure.Persistence;
 using NadinSoftTask.Infrastructure.Persistence.Repositories;
-using NadinSoftTask.Infrastructure.Security;
 
 namespace NadinSoftTask.Infrastructure;
 
@@ -32,7 +31,7 @@ public static class DependencyInjection
             serviceProvider.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IRefreshTokenStore, RefreshTokenStore>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddIdentityCore<ApplicationUser>(options =>
@@ -57,7 +56,7 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>();
 
         services.AddSingleton<TimeProvider>(TimeProvider.System);
-        services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddScoped<ITokenService, TokenService>();
 
         return services;
     }

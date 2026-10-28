@@ -1,5 +1,4 @@
 using NadinSoftTask.Application.Common.Dtos;
-using NadinSoftTask.Domain.Users;
 
 namespace NadinSoftTask.Tests.Application.TestData;
 
@@ -17,9 +16,16 @@ internal static class AuthTestData
 
     public static UserDto User => new(UserId, Username);
 
-    public static RefreshToken CreateRefreshToken(
-        string token = RefreshToken,
+    public static AuthResult CreateAuthResult(
+        string refreshToken = RefreshToken,
+        DateTime? refreshTokenExpiresAt = null,
         string userId = UserId,
-        DateTime? expiresAt = null) =>
-        new(token, userId, expiresAt ?? DateTime.UtcNow.AddMinutes(5));
+        string username = Username) =>
+        new(
+            AccessToken,
+            refreshToken,
+            AccessTokenExpiresAt,
+            refreshTokenExpiresAt ?? RefreshTokenExpiresAt,
+            userId,
+            username);
 }

@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace NadinSoftTask.Domain.Users;
+namespace NadinSoftTask.Infrastructure.Identity;
 
 public sealed class RefreshToken
 {
@@ -9,7 +9,7 @@ public sealed class RefreshToken
     {
     }
 
-    public RefreshToken(string token, string userId, DateTime expiresAt)
+    public RefreshToken(string token, string userId, DateTime expiresAt, DateTime createdAt)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -21,18 +21,15 @@ public sealed class RefreshToken
             throw new ArgumentException("User id cannot be empty or whitespace.", nameof(userId));
         }
 
-        Token = token;
         TokenHash = HashToken(token);
         UserId = userId;
         ExpiresAt = NormalizeUtc(expiresAt);
-        CreatedAt = NormalizeUtc(DateTime.UtcNow);
+        CreatedAt = NormalizeUtc(createdAt);
     }
 
     public int Id { get; private set; }
 
-    // The raw token is returned to the client and never persisted; only its hash is stored.
-    public string Token { get; private set; } = null!;
-
+    // Only the hash is persisted; the raw token is returned to the client and never stored.
     public byte[] TokenHash { get; private set; } = null!;
 
     public string UserId { get; private set; } = null!;
@@ -55,14 +52,14 @@ public sealed class RefreshToken
         return SHA256.HashData(Encoding.UTF8.GetBytes(token));
     }
 
-    public void Revoke()
+    public void Revoke(DateTime revokedAt)
     {
         if (RevokedAt.HasValue)
         {
             return;
         }
 
-        RevokedAt = NormalizeUtc(DateTime.UtcNow);
+        RevokedAt = NormalizeUtc(revokedAt);
     }
 
     public bool IsActive(DateTime now) =>

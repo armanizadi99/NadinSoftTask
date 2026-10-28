@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Domain.Products;
-using NadinSoftTask.Domain.Users;
 using NadinSoftTask.Infrastructure.Identity;
 
 namespace NadinSoftTask.Infrastructure.Persistence;

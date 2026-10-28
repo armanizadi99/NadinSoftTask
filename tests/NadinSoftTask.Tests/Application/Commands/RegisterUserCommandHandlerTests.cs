@@ -11,25 +11,15 @@ namespace NadinSoftTask.Tests.Application.Commands;
 public class RegisterUserCommandHandlerTests
 {
     [Fact]
-    public async Task Handle_WithValidCommand_CreatesUserIssuesTokensPersistsRefreshTokenAndSaves()
+    public async Task Handle_WithValidCommand_CreatesUserAndReturnsIssuedTokens()
     {
         RegisterUserCommand command = new(AuthTestData.Username, AuthTestData.Password);
         AuthTestContext context = new();
         UserDto user = AuthTestData.User;
+        AuthResult authResult = AuthTestData.CreateAuthResult();
 
         context.GivenCreateSucceeds(command.Username, command.Password, user);
-        context.GivenAccessToken(
-            user.Id,
-            user.Username,
-            AuthTestData.AccessToken,
-            AuthTestData.AccessTokenExpiresAt);
-        context.GivenRefreshToken(AuthTestData.RefreshToken);
-        context.GivenRefreshTokenExpiration(AuthTestData.RefreshTokenExpiresAt);
-        context.GivenAddSucceeds(refreshToken =>
-            refreshToken.Token == AuthTestData.RefreshToken &&
-            refreshToken.UserId == user.Id &&
-            refreshToken.ExpiresAt == AuthTestData.RefreshTokenExpiresAt &&
-            !refreshToken.IsRevoked);
+        context.GivenGenerateTokens(user.Id, user.Username, authResult);
 
         Result<AuthResult> result = await CreateHandler(context).Handle(
             command,
@@ -37,20 +27,10 @@ public class RegisterUserCommandHandlerTests
 
         result.IsSuccess.ShouldBeTrue();
         result.Error.ShouldBeSameAs(DomainError.None);
-        result.Value.ShouldBe(new AuthResult(
-            AuthTestData.AccessToken,
-            AuthTestData.RefreshToken,
-            AuthTestData.AccessTokenExpiresAt,
-            AuthTestData.RefreshTokenExpiresAt,
-            user.Id,
-            user.Username));
+        result.Value.ShouldBe(authResult);
 
         context.VerifyCreatedOnce(command.Username, command.Password);
-        context.VerifyAccessTokenGeneratedOnce(user.Id, user.Username);
-        context.VerifyRefreshTokenGeneratedOnce();
-        context.VerifyRefreshTokenExpirationRequestedOnce();
-        context.VerifyRefreshTokenAddedOnce();
-        context.VerifySavedOnce();
+        context.VerifyGenerateTokensOnce(user.Id, user.Username);
     }
 
     [Fact]
@@ -73,15 +53,11 @@ public class RegisterUserCommandHandlerTests
         result.Error.Kind.ShouldBe(DomainErrorKind.Conflict);
 
         context.VerifyCreatedOnce(command.Username, command.Password);
-        context.VerifyAccessTokenNotGenerated();
-        context.VerifyRefreshTokenNotGenerated();
-        context.VerifyRefreshTokenExpirationNotRequested();
-        context.VerifyNotAdded();
-        context.VerifyNotSaved();
+        context.VerifyGenerateTokensNotCalled();
     }
 
     [Fact]
-    public async Task Handle_WhenUserCreationFails_PropagatesErrorAndDoesNotPersist()
+    public async Task Handle_WhenUserCreationFails_PropagatesErrorAndDoesNotIssueTokens()
     {
         RegisterUserCommand command = new(AuthTestData.Username, AuthTestData.Password);
         AuthTestContext context = new();
@@ -100,17 +76,11 @@ public class RegisterUserCommandHandlerTests
         result.Error.ShouldBe(validationError);
 
         context.VerifyCreatedOnce(command.Username, command.Password);
-        context.VerifyAccessTokenNotGenerated();
-        context.VerifyRefreshTokenNotGenerated();
-        context.VerifyRefreshTokenExpirationNotRequested();
-        context.VerifyNotAdded();
-        context.VerifyNotSaved();
+        context.VerifyGenerateTokensNotCalled();
     }
 
     private static RegisterUserCommandHandler CreateHandler(AuthTestContext context) =>
         new(
             context.UserRepository.Object,
-            context.TokenService.Object,
-            context.RefreshTokenRepository.Object,
-            context.UnitOfWork.Object);
+            context.TokenService.Object);
 }

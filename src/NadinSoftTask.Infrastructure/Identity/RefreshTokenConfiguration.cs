@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using NadinSoftTask.Domain.Users;
 using NadinSoftTask.Infrastructure.Persistence.Converters;
 
-namespace NadinSoftTask.Infrastructure.Persistence.Configurations;
+namespace NadinSoftTask.Infrastructure.Identity;
 
 public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 {
@@ -53,7 +52,6 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
             .HasConversion(DateTimeConverters.NullableUtcDateTime)
             .HasColumnType("smalldatetime");
 
-        builder.Ignore(refreshToken => refreshToken.Token);
         builder.Ignore(refreshToken => refreshToken.IsRevoked);
     }
 }
