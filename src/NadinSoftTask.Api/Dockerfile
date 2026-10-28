@@ -13,23 +13,22 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Build.props", "./"]
-COPY ["src/NadinSoftTask/NadinSoftTask.csproj", "src/NadinSoftTask/"]
 COPY ["src/NadinSoftTask.Api/NadinSoftTask.Api.csproj", "src/NadinSoftTask.Api/"]
 COPY ["src/NadinSoftTask.Application/NadinSoftTask.Application.csproj", "src/NadinSoftTask.Application/"]
 COPY ["src/NadinSoftTask.Domain/NadinSoftTask.Domain.csproj", "src/NadinSoftTask.Domain/"]
 COPY ["src/NadinSoftTask.Infrastructure/NadinSoftTask.Infrastructure.csproj", "src/NadinSoftTask.Infrastructure/"]
-RUN dotnet restore "src/NadinSoftTask/NadinSoftTask.csproj"
+RUN dotnet restore "src/NadinSoftTask.Api/NadinSoftTask.Api.csproj"
 COPY . .
-WORKDIR "/src/src/NadinSoftTask"
-RUN dotnet build "./NadinSoftTask.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/src/NadinSoftTask.Api"
+RUN dotnet build "./NadinSoftTask.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./NadinSoftTask.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./NadinSoftTask.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "NadinSoftTask.dll"]
+ENTRYPOINT ["dotnet", "NadinSoftTask.Api.dll"]
