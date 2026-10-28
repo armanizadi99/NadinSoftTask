@@ -1,0 +1,46 @@
+name: nadinsofttask
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      # Development-only default. Override with MSSQL_SA_PASSWORD or a .env file.
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-NadinSoft!Passw0rd}"
+    ports:
+      # The host SQL Server already uses 1433, so expose this one on 1434.
+      # Bound to loopback only; the API reaches it over the Compose network.
+      - "127.0.0.1:${SQLSERVER_PORT:-1434}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -b -Q "SELECT 1" -o /dev/null
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: src/NadinSoftTask.Api/Dockerfile
+    image: nadinsofttask-api:latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      Database__AutoMigrate: "true"
+      # Development-only default. Override with JWT_SIGNING_KEY or a .env file.
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:-dev-only-signing-key-change-me-32-bytes!}"
+      ConnectionStrings__Default: "Server=sqlserver;Database=NadinSoftTaskDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-NadinSoft!Passw0rd};TrustServerCertificate=True;Encrypt=True"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  sqlserver-data:
