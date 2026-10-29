@@ -33,7 +33,7 @@ Stop the stack with `docker compose down` (add `-v` to also delete the database 
 
 ## Overview
 
-The API exposes a product catalogue with JWT authentication and refresh-token rotation. A product belongs to the user who created it (`OwnerId` is taken from the access token, never from the request body). Listing is public; mutation is owner-only.
+The API exposes a product catalogue whose authentication is built on **ASP.NET Core Identity** and **JWT**. User accounts and passwords are managed by ASP.NET Core Identity (`Identity Core` with EF Core stores), while HTTP requests are authenticated with JWT bearer access tokens issued by the application. A product belongs to the user who created it (`OwnerId` is taken from the access token, never from the request body). Listing is public; mutation is owner-only.
 
 Beyond CRUD, the project is a complete example of the patterns the task asked for: CQRS handlers with MediatR, a FluentValidation pipeline behavior, AutoMapper profiles, a `Result`/`DomainError` model mapped to RFC 7807 problem details, and unit tests for every layer.
 
@@ -59,7 +59,7 @@ The API also includes registration, login and refresh-token endpoints, because "
 | Docker support with Compose | `docker-compose.yml`: API + SQL Server 2022, healthcheck, named volume |
 | .NET 8, ASP.NET Core, EF Core | `Directory.Build.props`, `net8.0`, EF Core 8.0.33 |
 | **Migrations applied automatically on startup** | `Program.cs` runs `dbContext.Database.MigrateAsync()` when `Database:AutoMigrate` is `true` |
-| JWT authentication (supports the ownership rules) | Access token (15 min) + rotating refresh token (7 days), hashed at rest |
+| Authentication: ASP.NET Core Identity + JWT | Identity Core (`Guid` keys) handles users, username uniqueness and password hashing through `UserManager`; JWT bearer access tokens (15 min) + rotating refresh tokens (7 days, stored only as a SHA-256 hash) protect the API |
 
 ---
 
@@ -69,7 +69,7 @@ The API also includes registration, login and refresh-token endpoints, because "
 |---|---|
 | Runtime | .NET 8 (`net8.0`), ASP.NET Core 8 |
 | Data access | EF Core 8.0.33, SQL Server 2022 |
-| Identity | ASP.NET Core Identity Core (`Guid` keys), JWT Bearer |
+| Identity & auth | ASP.NET Core Identity (`Identity Core` + EF Core stores, `Guid` keys) + JWT Bearer |
 | CQRS / messaging | MediatR 12.5 |
 | Validation | FluentValidation 12 + `ValidationBehavior` pipeline |
 | Mapping | AutoMapper 15 |
@@ -225,6 +225,15 @@ The unique index is the source of truth. Handlers check the key first to return 
 | `DELETE /api/products/{id}` | Bearer token | Must be the creator, otherwise `403` |
 
 The access token is sent as `Authorization: Bearer {accessToken}`. Tokens expire after 15 minutes; use the refresh token within 7 days to rotate them.
+
+### Authentication and identity
+
+Authentication has two cooperating halves: **ASP.NET Core Identity** for the user store, and **JWT** for the HTTP session.
+
+- **Identity Core.** `ApplicationUser : IdentityUser<Guid>` is persisted through `IdentityUserContext` and EF Core stores (`AddIdentityCore<ApplicationUser>().AddEntityFrameworkStores<AppDbContext>()`). `UserManager` creates users, enforces the unique username and hashes/verifies passwords. Cookies, roles, external logins, 2FA and lockout are intentionally not enabled.
+- **JWT access token.** Issued as an HS256 token with `sub` (user id), `unique_name` (username) and `jti` claims, valid for 15 minutes. The API validates issuer, audience, signing key and lifetime with zero clock skew via the JWT bearer handler.
+- **Refresh tokens.** A custom, opaque 32-byte random token — not an Identity feature — stored only as a SHA-256 hash in `RefreshTokens` (`binary(32)`). Each refresh revokes the old token and issues a new pair; the token is valid for 7 days.
+- **Authorization.** `[Authorize]` enforces authentication, `CurrentUser` reads the `sub` claim, and ownership is enforced in the domain by `Product.EnsureOwnedBy`, which returns `403` for non-creators.
 
 ---
 
