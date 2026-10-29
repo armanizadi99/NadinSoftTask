@@ -1,5 +1,6 @@
 using AutoMapper;
 using MediatR;
+using NadinSoftTask.Application.Common;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
 using NadinSoftTask.Domain.Common;
@@ -16,11 +17,11 @@ public sealed class ListProductsForUserQueryHandler(
         ListProductsForUserQuery request,
         CancellationToken cancellationToken)
     {
-        UserDto? user = await userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        UserDto? user = await userRepository.GetByIdAsync(request.UserId);
 
         if (user is null)
         {
-            return new DomainError("User was not found.", DomainErrorKind.NotFound);
+            return new DomainError(UserErrors.NotFound, DomainErrorKind.NotFound);
         }
 
         IReadOnlyList<Product> products = await productRepository.ListByOwnerAsync(

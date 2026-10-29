@@ -13,40 +13,27 @@ internal sealed class AuthTestContext
 
     public void GivenCreateSucceeds(string username, string password, UserDto user) =>
         UserRepository
-            .Setup(repository => repository.CreateAsync(
-                username,
-                password,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.CreateAsync(username, password))
             .ReturnsAsync(Result<UserDto>.Success(user));
 
     public void GivenCreateFails(string username, string password, DomainError error) =>
         UserRepository
-            .Setup(repository => repository.CreateAsync(
-                username,
-                password,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.CreateAsync(username, password))
             .ReturnsAsync(Result<UserDto>.Failure(error));
 
     public void GivenUser(string username, UserDto user) =>
         UserRepository
-            .Setup(repository => repository.GetByUsernameAsync(
-                username,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByUsernameAsync(username))
             .ReturnsAsync(user);
 
     public void GivenMissingUser(string username) =>
         UserRepository
-            .Setup(repository => repository.GetByUsernameAsync(
-                username,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByUsernameAsync(username))
             .ReturnsAsync((UserDto?)null);
 
     public void GivenPasswordValidity(string userId, string password, bool isValid) =>
         UserRepository
-            .Setup(repository => repository.CheckPasswordAsync(
-                userId,
-                password,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.CheckPasswordAsync(userId, password))
             .ReturnsAsync(isValid);
 
     public void GivenGenerateTokens(
@@ -69,33 +56,24 @@ internal sealed class AuthTestContext
 
     public void VerifyCreatedOnce(string username, string password) =>
         UserRepository.Verify(
-            repository => repository.CreateAsync(
-                username,
-                password,
-                It.IsAny<CancellationToken>()),
+            repository => repository.CreateAsync(username, password),
             Times.Once);
 
     public void VerifyUserLookupOnce(string username) =>
         UserRepository.Verify(
-            repository => repository.GetByUsernameAsync(
-                username,
-                It.IsAny<CancellationToken>()),
+            repository => repository.GetByUsernameAsync(username),
             Times.Once);
 
     public void VerifyPasswordCheckedOnce(string userId, string password) =>
         UserRepository.Verify(
-            repository => repository.CheckPasswordAsync(
-                userId,
-                password,
-                It.IsAny<CancellationToken>()),
+            repository => repository.CheckPasswordAsync(userId, password),
             Times.Once);
 
     public void VerifyPasswordNotChecked() =>
         UserRepository.Verify(
             repository => repository.CheckPasswordAsync(
                 It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()),
+                It.IsAny<string>()),
             Times.Never);
 
     public void VerifyGenerateTokensOnce(string userId, string username) =>
@@ -120,11 +98,4 @@ internal sealed class AuthTestContext
                 refreshToken,
                 It.IsAny<CancellationToken>()),
             Times.Once);
-
-    public void VerifyRefreshTokensNotCalled() =>
-        TokenService.Verify(
-            service => service.RefreshTokensAsync(
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()),
-            Times.Never);
 }

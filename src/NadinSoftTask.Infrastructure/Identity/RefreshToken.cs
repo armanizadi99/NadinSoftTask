@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using NadinSoftTask.Infrastructure.Common;
 
 namespace NadinSoftTask.Infrastructure.Identity;
 
@@ -65,17 +66,6 @@ public sealed class RefreshToken
     public bool IsActive(DateTime now) =>
         !IsRevoked && ExpiresAt > now;
 
-    private static DateTime NormalizeUtc(DateTime value)
-    {
-        DateTime utc = value.Kind switch
-        {
-            DateTimeKind.Utc => value,
-            DateTimeKind.Local => value.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-        };
-
-        return new DateTime(
-            utc.Ticks - (utc.Ticks % TimeSpan.TicksPerMinute),
-            DateTimeKind.Utc);
-    }
+    private static DateTime NormalizeUtc(DateTime value) =>
+        UtcDateTimes.NormalizeToMinute(value);
 }

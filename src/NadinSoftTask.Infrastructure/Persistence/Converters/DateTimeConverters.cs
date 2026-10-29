@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NadinSoftTask.Infrastructure.Common;
 
 namespace NadinSoftTask.Infrastructure.Persistence.Converters;
 
@@ -12,17 +13,6 @@ public static class DateTimeConverters
         value => value.HasValue ? Normalize(value.Value) : null,
         value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : null);
 
-    private static DateTime Normalize(DateTime value)
-    {
-        DateTime utc = value.Kind switch
-        {
-            DateTimeKind.Utc => value,
-            DateTimeKind.Local => value.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-        };
-
-        return new DateTime(
-            utc.Ticks - (utc.Ticks % TimeSpan.TicksPerMinute),
-            DateTimeKind.Utc);
-    }
+    private static DateTime Normalize(DateTime value) =>
+        UtcDateTimes.NormalizeToMinute(value);
 }

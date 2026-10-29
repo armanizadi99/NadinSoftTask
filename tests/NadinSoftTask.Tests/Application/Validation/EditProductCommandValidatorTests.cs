@@ -1,5 +1,6 @@
 using FluentValidation.TestHelper;
 using NadinSoftTask.Application.Commands.EditProduct;
+using NadinSoftTask.Domain.Products;
 using NadinSoftTask.Tests.Application.TestData;
 using Xunit;
 
@@ -29,13 +30,123 @@ public class EditProductCommandValidatorTests
             .WithErrorMessage("Product id must be greater than zero.");
     }
 
-    [Fact]
-    public void Validate_WithMissingName_HasNameError()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_WithMissingName_HasNameError(string? name)
     {
         TestValidationResult<EditProductCommand> result =
-            _validator.TestValidate(CreateCommand(name: string.Empty));
+            _validator.TestValidate(CreateCommand(name: name!));
 
-        result.ShouldHaveValidationErrorFor(command => command.Name);
+        result.ShouldHaveValidationErrorFor(command => command.Name)
+            .WithErrorMessage("Product name cannot be empty or whitespace.");
+    }
+
+    [Fact]
+    public void Validate_WithTooShortName_HasNameError()
+    {
+        string name = new('a', ProductConstraints.MinNameLength - 1);
+
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(name: name));
+
+        result.ShouldHaveValidationErrorFor(command => command.Name)
+            .WithErrorMessage(
+                $"Product name length must be between {ProductConstraints.MinNameLength} and {ProductConstraints.MaxNameLength} characters.");
+    }
+
+    [Fact]
+    public void Validate_WithTooLongName_HasNameError()
+    {
+        string name = new('a', ProductConstraints.MaxNameLength + 1);
+
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(name: name));
+
+        result.ShouldHaveValidationErrorFor(command => command.Name)
+            .WithErrorMessage(
+                $"Product name length must be between {ProductConstraints.MinNameLength} and {ProductConstraints.MaxNameLength} characters.");
+    }
+
+    [Fact]
+    public void Validate_WithNameExceedingUtf8ByteLimit_HasNameError()
+    {
+        string name = new('あ', 101);
+
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(name: name));
+
+        result.ShouldHaveValidationErrorFor(command => command.Name)
+            .WithErrorMessage(
+                $"Product name must be at most {ProductConstraints.MaxNameUtf8Bytes} UTF-8 bytes.");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_WithMissingPhone_HasPhoneError(string? phone)
+    {
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(phone: phone!));
+
+        result.ShouldHaveValidationErrorFor(command => command.ManufacturePhone)
+            .WithErrorMessage("Phone cannot be empty or whitespace.");
+    }
+
+    [Fact]
+    public void Validate_WithTooShortPhone_HasPhoneError()
+    {
+        string phone = new('1', ProductConstraints.MinPhoneLength - 1);
+
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(phone: phone));
+
+        result.ShouldHaveValidationErrorFor(command => command.ManufacturePhone)
+            .WithErrorMessage(
+                $"Phone length must be between {ProductConstraints.MinPhoneLength} and {ProductConstraints.MaxPhoneLength} characters.");
+    }
+
+    [Fact]
+    public void Validate_WithTooLongPhone_HasPhoneError()
+    {
+        string phone = new('1', ProductConstraints.MaxPhoneLength + 1);
+
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(phone: phone));
+
+        result.ShouldHaveValidationErrorFor(command => command.ManufacturePhone)
+            .WithErrorMessage(
+                $"Phone length must be between {ProductConstraints.MinPhoneLength} and {ProductConstraints.MaxPhoneLength} characters.");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_WithMissingEmail_HasEmailError(string? email)
+    {
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(email: email!));
+
+        result.ShouldHaveValidationErrorFor(command => command.ManufactureEmail)
+            .WithErrorMessage("Email cannot be empty or whitespace.");
+    }
+
+    [Theory]
+    [InlineData("plainaddress")]
+    [InlineData("user@")]
+    [InlineData("user@exa mple.com")]
+    [InlineData("Bob <bob@example.com>")]
+    [InlineData(" user@example.com")]
+    public void Validate_WithInvalidEmail_HasEmailError(string email)
+    {
+        TestValidationResult<EditProductCommand> result =
+            _validator.TestValidate(CreateCommand(email: email));
+
+        result.ShouldHaveValidationErrorFor(command => command.ManufactureEmail)
+            .WithErrorMessage("Email is not a valid email address.");
     }
 
     [Fact]

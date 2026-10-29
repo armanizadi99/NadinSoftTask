@@ -18,14 +18,12 @@ public sealed class DeleteProductCommandHandler(
 
         if (product is null)
         {
-            return new DomainError("Product was not found.", DomainErrorKind.NotFound);
+            return new DomainError(ProductErrors.NotFound, DomainErrorKind.NotFound);
         }
 
         if (!product.EnsureOwnedBy(currentUser.UserId))
         {
-            return new DomainError(
-                "Only the product creator can modify this product.",
-                DomainErrorKind.NotAuthorized);
+            return new DomainError(ProductErrors.NotOwner, DomainErrorKind.NotAuthorized);
         }
 
         productRepository.Delete(product);

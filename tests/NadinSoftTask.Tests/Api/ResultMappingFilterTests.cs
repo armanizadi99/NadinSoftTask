@@ -74,6 +74,7 @@ public class ResultMappingFilterTests
         objectResult.ContentTypes.ShouldContain("application/problem+json");
 
         ValidationProblemDetails problem = objectResult.Value.ShouldBeOfType<ValidationProblemDetails>();
+        problem.Type.ShouldBe("about:blank");
         problem.Status.ShouldBe(StatusCodes.Status400BadRequest);
         problem.Detail.ShouldBe(error.Message);
         problem.Errors["general"].ShouldContain(error.Message);
@@ -82,13 +83,14 @@ public class ResultMappingFilterTests
     }
 
     [Theory]
-    [InlineData(DomainErrorKind.NotFound, StatusCodes.Status404NotFound)]
-    [InlineData(DomainErrorKind.Conflict, StatusCodes.Status409Conflict)]
-    [InlineData(DomainErrorKind.Unauthorized, StatusCodes.Status401Unauthorized)]
-    [InlineData(DomainErrorKind.NotAuthorized, StatusCodes.Status403Forbidden)]
+    [InlineData(DomainErrorKind.NotFound, StatusCodes.Status404NotFound, "NotFound")]
+    [InlineData(DomainErrorKind.Conflict, StatusCodes.Status409Conflict, "Conflict")]
+    [InlineData(DomainErrorKind.Unauthorized, StatusCodes.Status401Unauthorized, "Unauthorized")]
+    [InlineData(DomainErrorKind.NotAuthorized, StatusCodes.Status403Forbidden, "Forbidden")]
     public void OnResultExecuting_WhenNonValidationErrorFails_MapsStatusAndProblemDetails(
         DomainErrorKind kind,
-        int expectedStatusCode)
+        int expectedStatusCode,
+        string expectedErrorKind)
     {
         using ServiceProvider provider = CreateServiceProvider();
         ResultMappingFilter filter = CreateFilter(provider);
@@ -103,9 +105,10 @@ public class ResultMappingFilterTests
         objectResult.ContentTypes.ShouldContain("application/problem+json");
 
         ProblemDetails problem = objectResult.Value.ShouldBeOfType<ProblemDetails>();
+        problem.Type.ShouldBe("about:blank");
         problem.Status.ShouldBe(expectedStatusCode);
         problem.Detail.ShouldBe(error.Message);
-        problem.Extensions["errorKind"].ShouldBe(kind.ToString());
+        problem.Extensions["errorKind"].ShouldBe(expectedErrorKind);
         problem.Extensions["traceId"].ShouldNotBeNull();
     }
 

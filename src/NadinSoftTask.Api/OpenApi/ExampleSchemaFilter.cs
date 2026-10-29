@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using NadinSoftTask.Api.Contracts.Auth;
 using NadinSoftTask.Api.Contracts.Products;
+using NadinSoftTask.Api.Errors;
 using NadinSoftTask.Application.Common.Dtos;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -18,6 +19,20 @@ public sealed class ExampleSchemaFilter : ISchemaFilter
     /// <inheritdoc />
     public void Apply(OpenApiSchema schema, SchemaFilterContext context)
     {
+        if (context.Type == typeof(ProblemDetails) || context.Type == typeof(ValidationProblemDetails))
+        {
+            schema.Properties["errorKind"] = new OpenApiSchema
+            {
+                Type = "string",
+                Description = "The application error kind."
+            };
+            schema.Properties["traceId"] = new OpenApiSchema
+            {
+                Type = "string",
+                Description = "The trace identifier for the request."
+            };
+        }
+
         if (context.Type == typeof(RegisterRequest))
         {
             schema.Example = new OpenApiObject
@@ -75,7 +90,7 @@ public sealed class ExampleSchemaFilter : ISchemaFilter
         {
             schema.Example = new OpenApiObject
             {
-                ["type"] = new OpenApiString("about:blank"),
+                ["type"] = new OpenApiString(ProblemDetailsDefaults.Type),
                 ["title"] = new OpenApiString("One or more validation errors occurred."),
                 ["status"] = new OpenApiInteger(400),
                 ["detail"] = new OpenApiString("Product name cannot be empty or whitespace."),
@@ -87,7 +102,7 @@ public sealed class ExampleSchemaFilter : ISchemaFilter
                         new OpenApiString("Product name cannot be empty or whitespace.")
                     }
                 },
-                ["errorKind"] = new OpenApiString("Validation"),
+                ["errorKind"] = new OpenApiString(ProblemDetailsErrorKinds.Validation),
                 ["traceId"] = new OpenApiString("00-8a2b6f5c1d9e4a7b8c0d1e2f3a4b5c6d-1a2b3c4d5e6f7a8b-00")
             };
         }

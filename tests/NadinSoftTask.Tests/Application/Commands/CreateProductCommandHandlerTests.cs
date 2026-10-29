@@ -17,7 +17,6 @@ public class CreateProductCommandHandlerTests
         const int createdProductId = 42;
         CreateProductCommand command = CreateCommand();
         ProductTestContext context = new();
-        ProductDto expectedDto = ProductDtoFactory.From(command, ProductTestData.OwnerId, createdProductId);
 
         context.GivenKeyExists(command.ProduceDate!.Value, command.ManufactureEmail, exists: false);
         context.GivenAddAssignsId(createdProductId, product =>
@@ -28,18 +27,23 @@ public class CreateProductCommandHandlerTests
             product.ManufactureEmail.Value == command.ManufactureEmail &&
             product.IsAvailable == command.IsAvailable!.Value &&
             product.ProduceDate == command.ProduceDate!.Value);
-        context.GivenMap(expectedDto, product => product.Id == createdProductId);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         result.Error.ShouldBeSameAs(DomainError.None);
-        result.Value.ShouldBe(expectedDto);
+        ProductDto dto = result.Value.ShouldNotBeNull();
+        dto.Id.ShouldBe(createdProductId);
+        dto.OwnerId.ShouldBe(ProductTestData.OwnerId);
+        dto.Name.ShouldBe(command.Name);
+        dto.ManufacturePhone.ShouldBe(command.ManufacturePhone);
+        dto.ManufactureEmail.ShouldBe(command.ManufactureEmail);
+        dto.IsAvailable.ShouldBe(command.IsAvailable!.Value);
+        dto.ProduceDate.ShouldBe(command.ProduceDate!.Value);
 
         context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail);
         context.VerifyAddedOnce();
         context.VerifyNotDeleted();
-        context.VerifyProductMapUsedOnce();
         context.VerifySavedOnce();
     }
 
@@ -60,7 +64,6 @@ public class CreateProductCommandHandlerTests
         context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail);
         context.VerifyNotAdded();
         context.VerifyNotDeleted();
-        context.VerifyProductMapNotUsed();
         context.VerifyNotSaved();
     }
 
@@ -77,5 +80,5 @@ public class CreateProductCommandHandlerTests
             context.ProductRepository.Object,
             context.UnitOfWork.Object,
             context.CurrentUser.Object,
-            context.Mapper.Object);
+            context.Mapper);
 }

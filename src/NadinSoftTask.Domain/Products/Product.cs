@@ -46,24 +46,20 @@ public sealed class Product
 
     public DateOnly ProduceDate { get; private set; }
 
-    public static Result<Product> Create(
+    public static Product Create(
         string ownerId,
         string name,
         Phone manufacturePhone,
         Email manufactureEmail,
         bool isAvailable,
-        DateOnly produceDate)
-    {
-        Product product = new(
+        DateOnly produceDate) =>
+        new(
             ownerId,
             name,
             manufacturePhone,
             manufactureEmail,
             isAvailable,
             produceDate);
-
-        return product;
-    }
 
     public bool EnsureOwnedBy(string requesterId) =>
         string.Equals(OwnerId, requesterId, StringComparison.Ordinal);
@@ -79,7 +75,7 @@ public sealed class Product
         if (!EnsureOwnedBy(requesterId))
         {
             return new DomainError(
-                "Only the product creator can modify this product.",
+                ProductErrors.NotOwner,
                 DomainErrorKind.NotAuthorized);
         }
 

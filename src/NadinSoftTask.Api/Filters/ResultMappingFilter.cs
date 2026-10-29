@@ -1,17 +1,17 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reflection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.WebUtilities;
+using NadinSoftTask.Api.Errors;
 using NadinSoftTask.Domain.Common;
+using ApplicationResult = NadinSoftTask.Domain.Common.IResult;
 
 namespace NadinSoftTask.Api.Filters;
 
 /// <summary>
-/// Maps application <see cref="Result" /> values returned by controller actions into
+/// Maps application <see cref="ApplicationResult" /> values returned by controller actions into
 /// HTTP success responses or RFC 7807 problem details.
 /// </summary>
 /// <remarks>
@@ -23,27 +23,17 @@ namespace NadinSoftTask.Api.Filters;
 public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFactory)
     : IResultFilter
 {
-    private static readonly ConcurrentDictionary<Type, ResultPropertyAccessor> Accessors = new();
-
     /// <inheritdoc />
     public void OnResultExecuting(ResultExecutingContext context)
     {
-        if (context.Result is not ObjectResult objectResult || objectResult.Value is null)
+        if (context.Result is not ObjectResult objectResult || objectResult.Value is not ApplicationResult result)
         {
             return;
         }
 
-        if (!TryGetResult(objectResult.Value, out ResultSnapshot snapshot))
+        if (result.IsFailure)
         {
-            return;
-        }
-
-        if (snapshot.IsFailure)
-        {
-            context.Result = CreateProblemResult(
-                context.HttpContext,
-                snapshot.Error);
-
+            context.Result = CreateProblemResult(context.HttpContext, result.Error);
             return;
         }
 
@@ -55,14 +45,13 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
             return;
         }
 
-        if (snapshot.HasValue)
+        if (result.HasValue)
         {
-            objectResult.Value = snapshot.Value;
+            objectResult.Value = result.Value;
             objectResult.StatusCode = statusCode;
             return;
         }
 
-        // A successful non-generic Result with a status that should have no body.
         context.Result = new StatusCodeResult(statusCode);
     }
 
@@ -71,9 +60,7 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
     {
     }
 
-    private ObjectResult CreateProblemResult(
-        HttpContext httpContext,
-        DomainError error)
+    private ObjectResult CreateProblemResult(HttpContext httpContext, DomainError error)
     {
         int statusCode = MapStatusCode(error.Kind);
 
@@ -87,6 +74,7 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
                     ["general"] = [error.Message]
                 })
             {
+                Type = ProblemDetailsDefaults.Type,
                 Status = statusCode,
                 Title = "One or more validation errors occurred.",
                 Detail = error.Message,
@@ -99,17 +87,18 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
                 httpContext,
                 statusCode: statusCode,
                 title: ReasonPhrases.GetReasonPhrase(statusCode),
+                type: ProblemDetailsDefaults.Type,
                 detail: error.Message,
                 instance: httpContext.Request.Path);
         }
 
-        problemDetails.Extensions["errorKind"] = error.Kind.ToString();
+        problemDetails.Extensions["errorKind"] = MapErrorKind(error.Kind);
         problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
 
         return new ObjectResult(problemDetails)
         {
             StatusCode = statusCode,
-            ContentTypes = { "application/problem+json" }
+            ContentTypes = { ProblemDetailsDefaults.ContentType }
         };
     }
 
@@ -124,63 +113,14 @@ public sealed class ResultMappingFilter(ProblemDetailsFactory problemDetailsFact
             _ => StatusCodes.Status500InternalServerError
         };
 
-    private static bool TryGetResult(object value, out ResultSnapshot snapshot)
-    {
-        if (value is Result result)
+    private static string MapErrorKind(DomainErrorKind kind) =>
+        kind switch
         {
-            snapshot = new ResultSnapshot(result.IsSuccess, result.Error, null, HasValue: false);
-            return true;
-        }
-
-        Type type = value.GetType();
-
-        if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Result<>))
-        {
-            snapshot = default;
-            return false;
-        }
-
-        ResultPropertyAccessor accessor = Accessors.GetOrAdd(
-            type,
-            static resultType => ResultPropertyAccessor.Create(resultType));
-
-        bool isSuccess = (bool)accessor.IsSuccess.GetValue(value)!;
-        DomainError error = (DomainError)accessor.Error.GetValue(value)!;
-        object? resultValue = accessor.Value.GetValue(value);
-
-        snapshot = new ResultSnapshot(isSuccess, error, resultValue, HasValue: true);
-        return true;
-    }
-
-    private readonly record struct ResultSnapshot(
-        bool IsSuccess,
-        DomainError Error,
-        object? Value,
-        bool HasValue)
-    {
-        public bool IsFailure => !IsSuccess;
-    }
-
-    private sealed class ResultPropertyAccessor(
-        PropertyInfo isSuccess,
-        PropertyInfo error,
-        PropertyInfo value)
-    {
-        public PropertyInfo IsSuccess { get; } = isSuccess;
-
-        public PropertyInfo Error { get; } = error;
-
-        public PropertyInfo Value { get; } = value;
-
-        public static ResultPropertyAccessor Create(Type resultType) =>
-            new(
-                GetProperty(resultType, nameof(Result<object>.IsSuccess)),
-                GetProperty(resultType, nameof(Result<object>.Error)),
-                GetProperty(resultType, nameof(Result<object>.Value)));
-
-        private static PropertyInfo GetProperty(Type resultType, string propertyName) =>
-            resultType.GetProperty(propertyName)
-            ?? throw new InvalidOperationException(
-                $"The result type '{resultType}' does not define a '{propertyName}' property.");
-    }
+            DomainErrorKind.Validation => ProblemDetailsErrorKinds.Validation,
+            DomainErrorKind.Unauthorized => ProblemDetailsErrorKinds.Unauthorized,
+            DomainErrorKind.NotAuthorized => ProblemDetailsErrorKinds.Forbidden,
+            DomainErrorKind.NotFound => ProblemDetailsErrorKinds.NotFound,
+            DomainErrorKind.Conflict => ProblemDetailsErrorKinds.Conflict,
+            _ => ProblemDetailsErrorKinds.InternalServerError
+        };
 }

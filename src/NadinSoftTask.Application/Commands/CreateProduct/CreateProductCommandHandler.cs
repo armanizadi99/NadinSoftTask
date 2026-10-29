@@ -23,7 +23,7 @@ public sealed class CreateProductCommandHandler(
             new Phone(request.ManufacturePhone),
             new Email(request.ManufactureEmail),
             request.IsAvailable!.Value,
-            request.ProduceDate!.Value).Value!;
+            request.ProduceDate!.Value);
 
         bool keyExists = await productRepository.ExistsByProduceDateAndEmailAsync(
             product.ProduceDate,
@@ -31,9 +31,7 @@ public sealed class CreateProductCommandHandler(
 
         if (keyExists)
         {
-            return new DomainError(
-                "A product with the same produce date and manufacture email already exists.",
-                DomainErrorKind.Conflict);
+            return new DomainError(ProductErrors.DuplicateKey, DomainErrorKind.Conflict);
         }
 
         await productRepository.AddAsync(product);

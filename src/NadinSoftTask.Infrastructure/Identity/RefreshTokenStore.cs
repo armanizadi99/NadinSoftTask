@@ -21,7 +21,4 @@ public sealed class RefreshTokenStore(AppDbContext dbContext) : IRefreshTokenSto
         RefreshToken refreshToken,
         CancellationToken cancellationToken = default) =>
         await dbContext.RefreshTokens.AddAsync(refreshToken, cancellationToken);
-
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        dbContext.SaveChangesAsync(cancellationToken);
 }

@@ -15,8 +15,7 @@ public sealed class RegisterUserCommandHandler(
     {
         Result<UserDto> createResult = await userRepository.CreateAsync(
             request.Username,
-            request.Password,
-            cancellationToken);
+            request.Password);
 
         if (createResult.IsFailure)
         {

@@ -21,7 +21,12 @@ public sealed class EditProductCommandHandler(
 
         if (product is null)
         {
-            return new DomainError("Product was not found.", DomainErrorKind.NotFound);
+            return new DomainError(ProductErrors.NotFound, DomainErrorKind.NotFound);
+        }
+
+        if (!product.EnsureOwnedBy(currentUser.UserId))
+        {
+            return new DomainError(ProductErrors.NotOwner, DomainErrorKind.NotAuthorized);
         }
 
         Email manufactureEmail = new(request.ManufactureEmail);
@@ -33,9 +38,7 @@ public sealed class EditProductCommandHandler(
 
         if (keyExists)
         {
-            return new DomainError(
-                "A product with the same produce date and manufacture email already exists.",
-                DomainErrorKind.Conflict);
+            return new DomainError(ProductErrors.DuplicateKey, DomainErrorKind.Conflict);
         }
 
         Result updateResult = product.Update(

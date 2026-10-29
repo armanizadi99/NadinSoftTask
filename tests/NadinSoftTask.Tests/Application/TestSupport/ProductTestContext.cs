@@ -1,7 +1,9 @@
 using AutoMapper;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
+using NadinSoftTask.Application.Common.Mapping;
 using NadinSoftTask.Domain.Products;
 using NadinSoftTask.Tests.Application.TestData;
 
@@ -15,13 +17,17 @@ internal sealed class ProductTestContext
         UnitOfWork
             .Setup(unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
+
+        Mapper = new MapperConfiguration(
+            configuration => configuration.AddProfile<ProductProfile>(),
+            NullLoggerFactory.Instance).CreateMapper();
     }
 
-    public CancellationToken CancellationToken { get; } = new CancellationTokenSource().Token;
+    public CancellationToken CancellationToken { get; } = CancellationToken.None;
 
     public Mock<ICurrentUser> CurrentUser { get; } = new(MockBehavior.Strict);
 
-    public Mock<IMapper> Mapper { get; } = new(MockBehavior.Strict);
+    public IMapper Mapper { get; }
 
     public Mock<IProductRepository> ProductRepository { get; } = new(MockBehavior.Strict);
 
@@ -31,12 +37,12 @@ internal sealed class ProductTestContext
 
     public void GivenUser(string userId) =>
         UserRepository
-            .Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByIdAsync(userId))
             .ReturnsAsync(new UserDto(userId, "test-user"));
 
     public void GivenMissingUser(string userId) =>
         UserRepository
-            .Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByIdAsync(userId))
             .ReturnsAsync((UserDto?)null);
 
     public void GivenProduct(Product product) =>
@@ -89,20 +95,6 @@ internal sealed class ProductTestContext
         ProductRepository
             .Setup(repository => repository.ListByOwnerAsync(userId, CancellationToken))
             .ReturnsAsync(productsFactory);
-
-    public void GivenMap(ProductDto dto, Func<Product, bool>? predicate = null) =>
-        Mapper
-            .Setup(mapper => mapper.Map<ProductDto>(
-                It.Is<Product>(product => predicate == null || predicate(product))))
-            .Returns(dto);
-
-    public void GivenListMap(
-        IReadOnlyList<ProductDto> dtos,
-        Func<IReadOnlyList<Product>, bool>? predicate = null) =>
-        Mapper
-            .Setup(mapper => mapper.Map<IReadOnlyList<ProductDto>>(
-                It.Is<IReadOnlyList<Product>>(products => predicate == null || predicate(products))))
-            .Returns(dtos);
 
     public void VerifyGetByIdOnce(int productId) =>
         ProductRepository.Verify(
@@ -160,26 +152,6 @@ internal sealed class ProductTestContext
             unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
 
-    public void VerifyProductMapUsedOnce() =>
-        Mapper.Verify(
-            mapper => mapper.Map<ProductDto>(It.IsAny<object>()),
-            Times.Once);
-
-    public void VerifyProductMapNotUsed() =>
-        Mapper.Verify(
-            mapper => mapper.Map<ProductDto>(It.IsAny<object>()),
-            Times.Never);
-
-    public void VerifyListMapUsedOnce() =>
-        Mapper.Verify(
-            mapper => mapper.Map<IReadOnlyList<ProductDto>>(It.IsAny<object>()),
-            Times.Once);
-
-    public void VerifyListMapNotUsed() =>
-        Mapper.Verify(
-            mapper => mapper.Map<IReadOnlyList<ProductDto>>(It.IsAny<object>()),
-            Times.Never);
-
     public void VerifyListAllOnce() =>
         ProductRepository.Verify(
             repository => repository.ListAllAsync(CancellationToken),
@@ -187,7 +159,7 @@ internal sealed class ProductTestContext
 
     public void VerifyUserLookupOnce(string userId) =>
         UserRepository.Verify(
-            repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>()),
+            repository => repository.GetByIdAsync(userId),
             Times.Once);
 
     public void VerifyListByOwnerOnce(string userId) =>

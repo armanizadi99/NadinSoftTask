@@ -1,6 +1,6 @@
 namespace NadinSoftTask.Domain.Common;
 
-public sealed class Result
+public sealed class Result : IResult
 {
     private Result(DomainError error)
     {
@@ -14,15 +14,19 @@ public sealed class Result
 
     public DomainError Error { get; }
 
-    public bool IsSuccess => Error == DomainError.None;
+    public bool IsSuccess => ReferenceEquals(Error, DomainError.None);
 
     public bool IsFailure => !IsSuccess;
+
+    public bool HasValue => false;
+
+    public object? Value => null;
 
     public static implicit operator Result(DomainError error) =>
         new(error ?? throw new ArgumentNullException(nameof(error)));
 }
 
-public sealed class Result<T>
+public sealed class Result<T> : IResult
 {
     private Result(T? value, DomainError error)
     {
@@ -34,9 +38,13 @@ public sealed class Result<T>
 
     public DomainError Error { get; }
 
-    public bool IsSuccess => Error == DomainError.None;
+    public bool IsSuccess => ReferenceEquals(Error, DomainError.None);
 
     public bool IsFailure => !IsSuccess;
+
+    public bool HasValue => true;
+
+    object? IResult.Value => Value;
 
     public static Result<T> Success(T value) =>
         new(value, DomainError.None);

@@ -38,6 +38,17 @@ public class ResultTests
     }
 
     [Fact]
+    public void Result_FailureWithValueEqualNone_IsFailure()
+    {
+        DomainError noneLike = new(string.Empty, DomainErrorKind.None);
+
+        Result result = Result.Failure(noneLike);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeSameAs(noneLike);
+    }
+
+    [Fact]
     public void GenericResult_FromValue_IsSuccessAndKeepsValue()
     {
         Email email = new("owner@acme.com");
@@ -68,6 +79,17 @@ public class ResultTests
         DomainError? error = null;
 
         Should.Throw<ArgumentNullException>(() => _ = (Result<Email>)error!);
+    }
+
+    [Fact]
+    public void GenericResult_FailureWithValueEqualNone_IsFailure()
+    {
+        DomainError noneLike = new(string.Empty, DomainErrorKind.None);
+
+        Result<Email> result = Result<Email>.Failure(noneLike);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBeSameAs(noneLike);
     }
 
     [Fact]

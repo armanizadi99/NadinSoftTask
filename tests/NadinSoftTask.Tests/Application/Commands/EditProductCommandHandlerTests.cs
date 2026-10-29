@@ -19,7 +19,6 @@ public class EditProductCommandHandlerTests
         EditProductCommand command = CreateCommand();
         Product product = ProductTestData.Create(id: ProductId, ownerId: ProductTestData.OwnerId);
         ProductTestContext context = new();
-        ProductDto expectedDto = ProductDtoFactory.From(command, ProductTestData.OwnerId);
 
         context.GivenProduct(product);
         context.GivenKeyExists(
@@ -27,19 +26,19 @@ public class EditProductCommandHandlerTests
             command.ManufactureEmail,
             exists: false,
             excludeProductId: ProductId);
-        context.GivenMap(expectedDto, updated =>
-            updated.Id == ProductId &&
-            updated.Name == command.Name &&
-            updated.ManufacturePhone.Value == command.ManufacturePhone &&
-            updated.ManufactureEmail.Value == command.ManufactureEmail &&
-            updated.IsAvailable == command.IsAvailable!.Value &&
-            updated.ProduceDate == command.ProduceDate!.Value);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         result.Error.ShouldBeSameAs(DomainError.None);
-        result.Value.ShouldBe(expectedDto);
+        ProductDto dto = result.Value.ShouldNotBeNull();
+        dto.Id.ShouldBe(ProductId);
+        dto.OwnerId.ShouldBe(ProductTestData.OwnerId);
+        dto.Name.ShouldBe(command.Name);
+        dto.ManufacturePhone.ShouldBe(command.ManufacturePhone);
+        dto.ManufactureEmail.ShouldBe(command.ManufactureEmail);
+        dto.IsAvailable.ShouldBe(command.IsAvailable!.Value);
+        dto.ProduceDate.ShouldBe(command.ProduceDate!.Value);
 
         product.Name.ShouldBe(command.Name);
         product.ManufacturePhone.Value.ShouldBe(command.ManufacturePhone);
@@ -49,7 +48,6 @@ public class EditProductCommandHandlerTests
 
         context.VerifyGetByIdOnce(ProductId);
         context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail, ProductId);
-        context.VerifyProductMapUsedOnce();
         context.VerifySavedOnce();
     }
 
@@ -66,7 +64,6 @@ public class EditProductCommandHandlerTests
 
         Product product = ProductTestData.Create(id: ProductId, ownerId: ProductTestData.OwnerId);
         ProductTestContext context = new();
-        ProductDto expectedDto = ProductDtoFactory.From(command, ProductTestData.OwnerId);
 
         context.GivenProduct(product);
         context.GivenKeyExists(
@@ -74,15 +71,17 @@ public class EditProductCommandHandlerTests
             ProductTestData.EmailAddress,
             exists: false,
             excludeProductId: ProductId);
-        context.GivenMap(expectedDto, updated => updated.Id == ProductId);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBe(expectedDto);
+        ProductDto dto = result.Value.ShouldNotBeNull();
+        dto.Id.ShouldBe(ProductId);
+        dto.Name.ShouldBe(command.Name);
+        dto.ManufacturePhone.ShouldBe(command.ManufacturePhone);
+        dto.ProduceDate.ShouldBe(command.ProduceDate!.Value);
 
         context.VerifyKeyExistsOnce(ProductTestData.ProduceDate, ProductTestData.EmailAddress, ProductId);
-        context.VerifyProductMapUsedOnce();
         context.VerifySavedOnce();
     }
 
@@ -114,7 +113,6 @@ public class EditProductCommandHandlerTests
 
         context.VerifyKeyExistsOnce(command.ProduceDate!.Value, command.ManufactureEmail, ProductId);
         context.VerifyNotSaved();
-        context.VerifyProductMapNotUsed();
     }
 
     [Fact]
@@ -134,7 +132,6 @@ public class EditProductCommandHandlerTests
         context.VerifyGetByIdOnce(ProductId);
         context.VerifyKeyExistsNever();
         context.VerifyNotSaved();
-        context.VerifyProductMapNotUsed();
     }
 
     [Fact]
@@ -145,11 +142,6 @@ public class EditProductCommandHandlerTests
         ProductTestContext context = new();
 
         context.GivenProduct(product);
-        context.GivenKeyExists(
-            command.ProduceDate!.Value,
-            command.ManufactureEmail,
-            exists: false,
-            excludeProductId: ProductId);
 
         Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
 
@@ -164,8 +156,34 @@ public class EditProductCommandHandlerTests
         product.ProduceDate.ShouldBe(ProductTestData.ProduceDate);
 
         context.VerifyGetByIdOnce(ProductId);
+        context.VerifyKeyExistsNever();
         context.VerifyNotSaved();
-        context.VerifyProductMapNotUsed();
+    }
+
+    [Fact]
+    public async Task Handle_WhenCurrentUserDoesNotOwnProductAndKeyConflicts_ReturnsNotAuthorizedBeforeDuplicateCheck()
+    {
+        EditProductCommand command = CreateCommand();
+        Product product = ProductTestData.Create(id: ProductId, ownerId: ProductTestData.OtherOwnerId);
+        ProductTestContext context = new();
+
+        context.GivenProduct(product);
+
+        Result<ProductDto> result = await CreateHandler(context).Handle(command, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Value.ShouldBeNull();
+        result.Error.Kind.ShouldBe(DomainErrorKind.NotAuthorized);
+
+        product.Name.ShouldBe(ProductTestData.ProductName);
+        product.ManufacturePhone.Value.ShouldBe(ProductTestData.PhoneNumber);
+        product.ManufactureEmail.Value.ShouldBe(ProductTestData.EmailAddress);
+        product.IsAvailable.ShouldBeTrue();
+        product.ProduceDate.ShouldBe(ProductTestData.ProduceDate);
+
+        context.VerifyGetByIdOnce(ProductId);
+        context.VerifyKeyExistsNever();
+        context.VerifyNotSaved();
     }
 
     private static EditProductCommand CreateCommand() =>
@@ -182,5 +200,5 @@ public class EditProductCommandHandlerTests
             context.ProductRepository.Object,
             context.UnitOfWork.Object,
             context.CurrentUser.Object,
-            context.Mapper.Object);
+            context.Mapper);
 }

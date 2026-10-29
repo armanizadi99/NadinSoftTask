@@ -31,7 +31,7 @@ internal static class ProductTestData
             new Phone(phoneNumber),
             new Email(emailAddress),
             isAvailable,
-            produceDate ?? ProduceDate).Value!;
+            produceDate ?? ProduceDate);
 
         SetId(product, id);
 

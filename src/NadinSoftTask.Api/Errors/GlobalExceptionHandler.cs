@@ -70,7 +70,7 @@ public sealed class GlobalExceptionHandler(
 
         ProblemDetails problemDetails = new()
         {
-            Type = "about:blank",
+            Type = ProblemDetailsDefaults.Type,
             Status = statusCode,
             Title = ReasonPhrases.GetReasonPhrase(statusCode),
             Detail = isServerError && !environment.IsDevelopment()
@@ -80,8 +80,8 @@ public sealed class GlobalExceptionHandler(
         };
 
         problemDetails.Extensions["errorKind"] = isServerError
-            ? "InternalServerError"
-            : "BadRequest";
+            ? ProblemDetailsErrorKinds.InternalServerError
+            : ProblemDetailsErrorKinds.BadRequest;
         problemDetails.Extensions["traceId"] = traceId;
 
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

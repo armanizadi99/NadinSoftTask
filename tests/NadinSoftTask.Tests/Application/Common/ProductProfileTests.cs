@@ -31,6 +31,13 @@ public class ProductProfileTests
 
         ProductDto dto = mapper.Map<ProductDto>(product);
 
-        dto.ShouldBe(ProductDtoFactory.From(product));
+        dto.ShouldBe(new ProductDto(
+            product.Id,
+            product.OwnerId,
+            product.Name,
+            product.ManufacturePhone.Value,
+            product.ManufactureEmail.Value,
+            product.IsAvailable,
+            product.ProduceDate));
     }
 }

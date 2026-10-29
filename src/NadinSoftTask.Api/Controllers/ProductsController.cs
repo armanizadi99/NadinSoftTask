@@ -51,12 +51,13 @@ public sealed class ProductsController(IMediator mediator) : ControllerBase
     /// </summary>
     /// <remarks>
     /// This endpoint is anonymous. The user id is a GUID. A malformed user id does not match
-    /// the route and returns 404; a valid but unknown user id also returns 404.
+    /// the route and returns an empty 404 response; a valid but unknown user id returns a
+    /// <c>application/problem+json</c> 404 response.
     /// </remarks>
     /// <param name="userId">The user id (GUID) whose products should be returned.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     /// <response code="200">The products owned by the requested user, or an empty list when the user has no products.</response>
-    /// <response code="404">The user was not found, or the user id in the route is malformed.</response>
+    /// <response code="404">A malformed user id returns an empty 404 response; a valid but unknown user id returns problem details.</response>
     /// <response code="500">An unexpected server error occurred.</response>
     [HttpGet("by-user/{userId:guid}")]
     [AllowAnonymous]

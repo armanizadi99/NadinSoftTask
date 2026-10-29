@@ -1,7 +1,4 @@
-using System.Reflection;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -20,113 +17,16 @@ public class UserRepositoryTests
     private const string Password = "password";
 
     [Fact]
-    public async Task CreateAsync_WhenUsernameIndexIsViolated_ReturnsConflict()
+    public async Task CreateAsync_WhenUsernameAlreadyExists_ReturnsConflictWithoutCreating()
     {
         TestContext context = new();
-        DbUpdateException exception = new(
-            "An error occurred while saving the entity changes.",
-            CreateSqlException(
-                2601,
-                "Cannot insert duplicate key row in object 'dbo.AspNetUsers' " +
-                "with unique index 'UserNameIndex'."));
-
-        context.GivenCreateThrows(exception);
-
-        Result<UserDto> result = await context.Repository.CreateAsync(Username, Password);
-
-        result.IsFailure.ShouldBeTrue();
-        result.Value.ShouldBeNull();
-        result.Error.Kind.ShouldBe(DomainErrorKind.Conflict);
-    }
-
-    [Fact]
-    public async Task CreateAsync_WhenUsernameConstraintIsViolated_ReturnsConflict()
-    {
-        TestContext context = new();
-        DbUpdateException exception = new(
-            "An error occurred while saving the entity changes.",
-            CreateSqlException(
-                2627,
-                "Violation of UNIQUE KEY constraint 'UserNameIndex'."));
-
-        context.GivenCreateThrows(exception);
+        context.GivenExistingUser();
 
         Result<UserDto> result = await context.Repository.CreateAsync(Username, Password);
 
         result.IsFailure.ShouldBeTrue();
         result.Error.Kind.ShouldBe(DomainErrorKind.Conflict);
-    }
-
-    [Fact]
-    public async Task CreateAsync_WhenSqlExceptionIsNested_ReturnsConflict()
-    {
-        TestContext context = new();
-        DbUpdateException exception = new(
-            "An error occurred while saving the entity changes.",
-            new InvalidOperationException(
-                "Wrapped database error.",
-                CreateSqlException(
-                    2601,
-                    "Cannot insert duplicate key row in object 'dbo.AspNetUsers' " +
-                    "with unique index 'UserNameIndex'.")));
-
-        context.GivenCreateThrows(exception);
-
-        Result<UserDto> result = await context.Repository.CreateAsync(Username, Password);
-
-        result.IsFailure.ShouldBeTrue();
-        result.Error.Kind.ShouldBe(DomainErrorKind.Conflict);
-    }
-
-    [Fact]
-    public async Task CreateAsync_WhenAnotherUniqueIndexIsViolated_PropagatesException()
-    {
-        TestContext context = new();
-        DbUpdateException exception = new(
-            "An error occurred while saving the entity changes.",
-            CreateSqlException(
-                2601,
-                "Cannot insert duplicate key row in object 'dbo.Products' " +
-                "with unique index 'UX_Products_ProduceDate_ManufactureEmail'."));
-
-        context.GivenCreateThrows(exception);
-
-        DbUpdateException thrown = await Should.ThrowAsync<DbUpdateException>(
-            () => context.Repository.CreateAsync(Username, Password));
-
-        thrown.ShouldBeSameAs(exception);
-    }
-
-    [Fact]
-    public async Task CreateAsync_WhenDatabaseErrorIsNotAUniqueViolation_PropagatesException()
-    {
-        TestContext context = new();
-        DbUpdateException exception = new(
-            "An error occurred while saving the entity changes.",
-            CreateSqlException(-2, "Timeout expired."));
-
-        context.GivenCreateThrows(exception);
-
-        DbUpdateException thrown = await Should.ThrowAsync<DbUpdateException>(
-            () => context.Repository.CreateAsync(Username, Password));
-
-        thrown.ShouldBeSameAs(exception);
-    }
-
-    [Fact]
-    public async Task CreateAsync_WhenExceptionHasNoSqlError_PropagatesException()
-    {
-        TestContext context = new();
-        DbUpdateException exception = new(
-            "An error occurred while saving the entity changes.",
-            new InvalidOperationException("The connection was closed."));
-
-        context.GivenCreateThrows(exception);
-
-        DbUpdateException thrown = await Should.ThrowAsync<DbUpdateException>(
-            () => context.Repository.CreateAsync(Username, Password));
-
-        thrown.ShouldBeSameAs(exception);
+        context.VerifyCreateNotCalled();
     }
 
     [Fact]
@@ -181,44 +81,6 @@ public class UserRepositoryTests
         Guid.TryParse(result.Value.Id, out _).ShouldBeTrue();
     }
 
-    // SqlException has no public constructor, so build one through the internal
-    // constructor used by Microsoft.Data.SqlClient.
-    private static SqlException CreateSqlException(int number, string message)
-    {
-        object error = Activator.CreateInstance(
-            typeof(SqlError),
-            BindingFlags.NonPublic | BindingFlags.Instance,
-            binder: null,
-            args:
-            [
-                number,
-                (byte)0,
-                (byte)0,
-                "test-server",
-                message,
-                "test-procedure",
-                0,
-                0u,
-                null
-            ],
-            culture: null)!;
-
-        object errors = Activator.CreateInstance(
-            typeof(SqlErrorCollection),
-            nonPublic: true)!;
-
-        typeof(SqlErrorCollection)
-            .GetMethod("Add", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .Invoke(errors, [error]);
-
-        return (SqlException)Activator.CreateInstance(
-            typeof(SqlException),
-            BindingFlags.NonPublic | BindingFlags.Instance,
-            binder: null,
-            args: [message, errors, null, Guid.Empty],
-            culture: null)!;
-    }
-
     private sealed class TestContext
     {
         private readonly Mock<UserManager<ApplicationUser>> _userManager;
@@ -236,10 +98,19 @@ public class UserRepositoryTests
                 new ServiceCollection().BuildServiceProvider(),
                 NullLogger<UserManager<ApplicationUser>>.Instance);
 
+            _userManager
+                .Setup(manager => manager.FindByNameAsync(Username))
+                .ReturnsAsync((ApplicationUser?)null);
+
             Repository = new UserRepository(_userManager.Object);
         }
 
         public UserRepository Repository { get; }
+
+        public void GivenExistingUser() =>
+            _userManager
+                .Setup(manager => manager.FindByNameAsync(Username))
+                .ReturnsAsync(new ApplicationUser(Username));
 
         public void GivenCreateReturns(IdentityResult result) =>
             _userManager
@@ -248,11 +119,11 @@ public class UserRepositoryTests
                     Password))
                 .ReturnsAsync(result);
 
-        public void GivenCreateThrows(DbUpdateException exception) =>
-            _userManager
-                .Setup(manager => manager.CreateAsync(
-                    It.Is<ApplicationUser>(user => user.UserName == Username),
-                    Password))
-                .ThrowsAsync(exception);
+        public void VerifyCreateNotCalled() =>
+            _userManager.Verify(
+                manager => manager.CreateAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>()),
+                Times.Never);
     }
 }

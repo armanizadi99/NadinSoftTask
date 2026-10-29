@@ -25,12 +25,9 @@ public class ListAllProductsQueryHandlerTests
             produceDate: ProductTestData.UpdatedProduceDate);
 
         IReadOnlyList<Product> products = [firstProduct, secondProduct];
-        IReadOnlyList<ProductDto> expectedDtos =
-            products.Select(product => ProductDtoFactory.From(product)).ToList();
 
         ProductTestContext context = new();
         context.GivenListAll(products);
-        context.GivenListMap(expectedDtos, source => source.SequenceEqual(products));
 
         Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             new ListAllProductsQuery(),
@@ -38,21 +35,24 @@ public class ListAllProductsQueryHandlerTests
 
         result.IsSuccess.ShouldBeTrue();
         result.Error.ShouldBeSameAs(DomainError.None);
-        result.Value.ShouldBe(expectedDtos);
+        IReadOnlyList<ProductDto> dtos = result.Value.ShouldNotBeNull();
+        dtos.Count.ShouldBe(2);
+        dtos[0].Id.ShouldBe(firstProduct.Id);
+        dtos[0].OwnerId.ShouldBe(firstProduct.OwnerId);
+        dtos[0].Name.ShouldBe(firstProduct.Name);
+        dtos[1].Id.ShouldBe(secondProduct.Id);
+        dtos[1].ManufactureEmail.ShouldBe(secondProduct.ManufactureEmail.Value);
 
         context.VerifyListAllOnce();
-        context.VerifyListMapUsedOnce();
     }
 
     [Fact]
     public async Task Handle_WhenNoProductsExist_ReturnsEmptyList()
     {
         IReadOnlyList<Product> products = [];
-        IReadOnlyList<ProductDto> expectedDtos = [];
 
         ProductTestContext context = new();
         context.GivenListAll(products);
-        context.GivenListMap(expectedDtos, source => source.Count == 0);
 
         Result<IReadOnlyList<ProductDto>> result = await CreateHandler(context).Handle(
             new ListAllProductsQuery(),
@@ -63,11 +63,10 @@ public class ListAllProductsQueryHandlerTests
         result.Value.ShouldBeEmpty();
 
         context.VerifyListAllOnce();
-        context.VerifyListMapUsedOnce();
     }
 
     private static ListAllProductsQueryHandler CreateHandler(ProductTestContext context) =>
         new(
             context.ProductRepository.Object,
-            context.Mapper.Object);
+            context.Mapper);
 }

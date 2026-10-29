@@ -33,9 +33,6 @@ public class TokenServiceTests
                 It.IsAny<CancellationToken>()))
             .Callback<RefreshToken, CancellationToken>((refreshToken, _) => added = refreshToken)
             .Returns(Task.CompletedTask);
-        context.Store
-            .Setup(store => store.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
 
         Result<AuthResult> result = await context.CreateService().GenerateTokensAsync(
             UserId,
@@ -68,8 +65,8 @@ public class TokenServiceTests
         added.IsRevoked.ShouldBeFalse();
         added.TokenHash.ShouldBe(RefreshToken.HashToken(authResult.RefreshToken));
 
-        context.Store.Verify(
-            store => store.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        context.UnitOfWork.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -93,13 +90,8 @@ public class TokenServiceTests
                 It.IsAny<CancellationToken>()))
             .Callback<RefreshToken, CancellationToken>((refreshToken, _) => added.Add(refreshToken))
             .Returns(Task.CompletedTask);
-        context.Store
-            .Setup(store => store.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
         context.UserRepository
-            .Setup(repository => repository.GetByIdAsync(
-                UserId,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByIdAsync(UserId))
             .ReturnsAsync(new UserDto(UserId, Username));
 
         Result<AuthResult> result = await context.CreateService().RefreshTokensAsync(
@@ -132,12 +124,10 @@ public class TokenServiceTests
         authResult.Username.ShouldBe(Username);
 
         context.UserRepository.Verify(
-            repository => repository.GetByIdAsync(
-                UserId,
-                It.IsAny<CancellationToken>()),
+            repository => repository.GetByIdAsync(UserId),
             Times.Once);
-        context.Store.Verify(
-            store => store.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        context.UnitOfWork.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -165,13 +155,11 @@ public class TokenServiceTests
                 It.IsAny<RefreshToken>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
-        context.Store.Verify(
-            store => store.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        context.UnitOfWork.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
         context.UserRepository.Verify(
-            repository => repository.GetByIdAsync(
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()),
+            repository => repository.GetByIdAsync(It.IsAny<string>()),
             Times.Never);
     }
 
@@ -200,8 +188,8 @@ public class TokenServiceTests
                 It.IsAny<RefreshToken>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
-        context.Store.Verify(
-            store => store.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        context.UnitOfWork.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -233,8 +221,8 @@ public class TokenServiceTests
                 It.IsAny<RefreshToken>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
-        context.Store.Verify(
-            store => store.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        context.UnitOfWork.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -251,9 +239,7 @@ public class TokenServiceTests
                 token: "stored-token",
                 expiresAt: UtcNow.AddMinutes(5)));
         context.UserRepository
-            .Setup(repository => repository.GetByIdAsync(
-                UserId,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByIdAsync(UserId))
             .ReturnsAsync((UserDto?)null);
 
         Result<AuthResult> result = await context.CreateService().RefreshTokensAsync(
@@ -268,8 +254,8 @@ public class TokenServiceTests
                 It.IsAny<RefreshToken>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
-        context.Store.Verify(
-            store => store.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        context.UnitOfWork.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -303,10 +289,18 @@ public class TokenServiceTests
 
         public Mock<IUserRepository> UserRepository { get; } = new(MockBehavior.Strict);
 
+        public Mock<IUnitOfWork> UnitOfWork { get; } = new(MockBehavior.Strict);
+
+        public TestContext() =>
+            UnitOfWork
+                .Setup(unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(1);
+
         public TokenService CreateService() =>
             new(
                 Store.Object,
                 UserRepository.Object,
+                UnitOfWork.Object,
                 Options.Create(new JwtOptions
                 {
                     Issuer = "test-issuer",

@@ -16,7 +16,8 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .Build();
 
         string connectionString = configuration.GetConnectionString("Default")
-            ?? "Server=localhost;Database=NadinSoftTaskDb;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=True";
+            ?? throw new InvalidOperationException(
+                "Connection string 'Default' is not configured.");
 
         DbContextOptionsBuilder<AppDbContext> optionsBuilder = new();
 
@@ -34,8 +35,9 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
         string[] candidates =
         [
             currentDirectory,
-            Path.Combine(currentDirectory, "src", "NadinSoftTask"),
-            Path.Combine(currentDirectory, "..", "NadinSoftTask")
+            Path.Combine(currentDirectory, "src", "NadinSoftTask.Api"),
+            Path.Combine(currentDirectory, "..", "NadinSoftTask.Api"),
+            Path.Combine(currentDirectory, "..", "..", "src", "NadinSoftTask.Api")
         ];
 
         return candidates

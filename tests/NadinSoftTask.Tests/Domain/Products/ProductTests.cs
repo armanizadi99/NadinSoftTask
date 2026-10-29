@@ -19,14 +19,10 @@ public class ProductTests
     private static readonly DateOnly UpdatedProduceDate = new(2027, 2, 20);
 
     [Fact]
-    public void Create_WithValidInput_ReturnsSuccessWithValues()
+    public void Create_WithValidInput_ReturnsProductWithValues()
     {
-        Result<Product> result = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, true, ValidProduceDate);
+        Product product = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, true, ValidProduceDate);
 
-        result.IsSuccess.ShouldBeTrue();
-        result.Error.ShouldBeSameAs(DomainError.None);
-
-        Product product = result.Value.ShouldBeOfType<Product>();
         product.OwnerId.ShouldBe(ValidOwnerId);
         product.Name.ShouldBe(ValidName);
         product.ManufacturePhone.ShouldBeSameAs(ValidPhone);
@@ -38,9 +34,9 @@ public class ProductTests
     [Fact]
     public void Create_KeepsIsAvailableFalse()
     {
-        Result<Product> result = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, false, ValidProduceDate);
+        Product product = Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, false, ValidProduceDate);
 
-        result.Value!.IsAvailable.ShouldBeFalse();
+        product.IsAvailable.ShouldBeFalse();
     }
 
     [Theory]
@@ -50,10 +46,9 @@ public class ProductTests
     {
         string name = new('a', length);
 
-        Result<Product> result = Product.Create(ValidOwnerId, name, ValidPhone, ValidEmail, true, ValidProduceDate);
+        Product product = Product.Create(ValidOwnerId, name, ValidPhone, ValidEmail, true, ValidProduceDate);
 
-        result.IsSuccess.ShouldBeTrue();
-        result.Value!.Name.ShouldBe(name);
+        product.Name.ShouldBe(name);
     }
 
     [Theory]
@@ -74,10 +69,9 @@ public class ProductTests
     {
         string name = new('ا', ProductConstraints.MaxNameLength);
 
-        Result<Product> result = Product.Create(ValidOwnerId, name, ValidPhone, ValidEmail, true, ValidProduceDate);
+        Product product = Product.Create(ValidOwnerId, name, ValidPhone, ValidEmail, true, ValidProduceDate);
 
-        result.IsSuccess.ShouldBeTrue();
-        result.Value!.Name.ShouldBe(name);
+        product.Name.ShouldBe(name);
     }
 
     [Fact]
@@ -314,5 +308,5 @@ public class ProductTests
     }
 
     private static Product CreateProduct() =>
-        Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, true, ValidProduceDate).Value!;
+        Product.Create(ValidOwnerId, ValidName, ValidPhone, ValidEmail, true, ValidProduceDate);
 }

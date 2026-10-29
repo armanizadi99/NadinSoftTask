@@ -3,16 +3,19 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using NadinSoftTask.Application.Common;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
 using NadinSoftTask.Application.Common.Security;
 using NadinSoftTask.Domain.Common;
+using NadinSoftTask.Infrastructure.Common;
 
 namespace NadinSoftTask.Infrastructure.Identity;
 
 public sealed class TokenService(
     IRefreshTokenStore refreshTokenStore,
     IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
     IOptions<JwtOptions> options,
     TimeProvider timeProvider) : ITokenService
 {
@@ -34,7 +37,7 @@ public sealed class TokenService(
         RefreshToken storedRefreshToken = new(refreshToken, userId, refreshTokenExpiresAt, now);
 
         await refreshTokenStore.AddAsync(storedRefreshToken, cancellationToken);
-        await refreshTokenStore.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthResult(
             accessToken,
@@ -65,9 +68,7 @@ public sealed class TokenService(
             return InvalidRefreshToken();
         }
 
-        UserDto? user = await userRepository.GetByIdAsync(
-            storedRefreshToken.UserId,
-            cancellationToken);
+        UserDto? user = await userRepository.GetByIdAsync(storedRefreshToken.UserId);
 
         if (user is null)
         {
@@ -84,7 +85,7 @@ public sealed class TokenService(
         storedRefreshToken.Revoke(now);
 
         await refreshTokenStore.AddAsync(replacement, cancellationToken);
-        await refreshTokenStore.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AuthResult(
             accessToken,
@@ -132,13 +133,8 @@ public sealed class TokenService(
         Base64UrlEncoder.Encode(RandomNumberGenerator.GetBytes(32));
 
     private DateTime GetRefreshTokenExpiration(DateTime now) =>
-        TruncateToMinute(now.AddDays(_options.RefreshTokenDays));
-
-    private static DateTime TruncateToMinute(DateTime value) =>
-        new(
-            value.Ticks - (value.Ticks % TimeSpan.TicksPerMinute),
-            DateTimeKind.Utc);
+        UtcDateTimes.NormalizeToMinute(now.AddDays(_options.RefreshTokenDays));
 
     private static DomainError InvalidRefreshToken() =>
-        new("Invalid refresh token.", DomainErrorKind.Unauthorized);
+        new(AuthErrors.InvalidRefreshToken, DomainErrorKind.Unauthorized);
 }

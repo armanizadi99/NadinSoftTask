@@ -1,4 +1,5 @@
 using MediatR;
+using NadinSoftTask.Application.Common;
 using NadinSoftTask.Application.Common.Abstractions;
 using NadinSoftTask.Application.Common.Dtos;
 using NadinSoftTask.Domain.Common;
@@ -13,9 +14,7 @@ public sealed class LoginCommandHandler(
         LoginCommand request,
         CancellationToken cancellationToken)
     {
-        UserDto? user = await userRepository.GetByUsernameAsync(
-            request.Username,
-            cancellationToken);
+        UserDto? user = await userRepository.GetByUsernameAsync(request.Username);
 
         if (user is null)
         {
@@ -24,8 +23,7 @@ public sealed class LoginCommandHandler(
 
         bool passwordIsValid = await userRepository.CheckPasswordAsync(
             user.Id,
-            request.Password,
-            cancellationToken);
+            request.Password);
 
         if (!passwordIsValid)
         {
@@ -39,5 +37,5 @@ public sealed class LoginCommandHandler(
     }
 
     private static DomainError InvalidCredentials() =>
-        new("Invalid username or password.", DomainErrorKind.Unauthorized);
+        new(AuthErrors.InvalidCredentials, DomainErrorKind.Unauthorized);
 }

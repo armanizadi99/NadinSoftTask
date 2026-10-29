@@ -33,7 +33,7 @@ public static class ApiDocumentationExtensions
                         "1. Call `POST /api/auth/register` or `POST /api/auth/login`.\n" +
                         "2. Copy the `accessToken` value from the response.\n" +
                         "3. Click **Authorize** and paste the token **without** the `Bearer ` prefix.\n\n" +
-                        "Access tokens expire after 15 minutes. Use `POST /api/auth/refresh` with the " +
+                        "Access tokens are short-lived. Use `POST /api/auth/refresh` with the " +
                         "refresh token to rotate the token pair.\n\n" +
                         "### Anonymous endpoints\n" +
                         "- `GET /api/products`\n" +

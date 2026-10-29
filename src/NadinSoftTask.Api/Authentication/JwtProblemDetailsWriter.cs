@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using NadinSoftTask.Api.Errors;
 
 namespace NadinSoftTask.Api.Authentication;
 
@@ -22,11 +23,11 @@ internal static class JwtProblemDetailsWriter
         }
 
         httpContext.Response.StatusCode = statusCode;
-        httpContext.Response.ContentType = "application/problem+json";
+        httpContext.Response.ContentType = ProblemDetailsDefaults.ContentType;
 
         ProblemDetails problemDetails = new()
         {
-            Type = "about:blank",
+            Type = ProblemDetailsDefaults.Type,
             Status = statusCode,
             Title = ReasonPhrases.GetReasonPhrase(statusCode),
             Detail = detail,
@@ -34,13 +35,15 @@ internal static class JwtProblemDetailsWriter
         };
 
         problemDetails.Extensions["errorKind"] =
-            statusCode == StatusCodes.Status401Unauthorized ? "Unauthorized" : "Forbidden";
+            statusCode == StatusCodes.Status401Unauthorized
+                ? ProblemDetailsErrorKinds.Unauthorized
+                : ProblemDetailsErrorKinds.Forbidden;
         problemDetails.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
 
         await httpContext.Response.WriteAsJsonAsync(
             problemDetails,
             options: null,
-            contentType: "application/problem+json",
+            contentType: ProblemDetailsDefaults.ContentType,
             cancellationToken: cancellationToken);
     }
 }
