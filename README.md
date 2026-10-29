@@ -81,15 +81,7 @@ The API also includes registration, login and refresh-token endpoints, because "
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    Client([Client / Swagger]) --> API["NadinSoftTask.Api<br/>Controllers · auth · problem details · Swagger"]
-    API --> APP["NadinSoftTask.Application<br/>Commands · queries · validators · DTOs"]
-    API --> INF["NadinSoftTask.Infrastructure<br/>EF Core · Identity · JWT · repositories"]
-    APP --> DOM["NadinSoftTask.Domain<br/>Entities · value objects · business rules"]
-    INF --> DOM
-    INF --> DB[(SQL Server 2022)]
-```
+Dependencies point inward: `Api` and `Infrastructure` depend on `Application`, and `Application` depends on `Domain`. `Domain` has no outward dependencies, and `Infrastructure` supplies the SQL Server and Identity implementations behind the abstractions defined in `Application`.
 
 - **Domain** has no framework dependencies. It owns `Product`, the `Email`/`Phone` value objects, validation rules, `Result`/`DomainError`, and the ownership rule.
 - **Application** depends only on Domain. It contains one folder per use case, FluentValidation validators, the MediatR `ValidationBehavior`, abstractions (`IProductRepository`, `IUnitOfWork`, `ICurrentUser`, `ITokenService`) and AutoMapper profiles.
@@ -98,31 +90,13 @@ flowchart LR
 
 ### Request flow
 
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant A as ProductsController
-    participant M as MediatR
-    participant V as ValidationBehavior
-    participant H as Handler
-    participant R as Repository
-    participant D as SQL Server
+A create request travels through the layers in a fixed order:
 
-    C->>A: POST /api/products + Bearer token
-    A->>M: CreateProductCommand
-    M->>V: validate (FluentValidation)
-    alt invalid
-        V-->>A: DomainError(Validation)
-        A-->>C: 400 problem+json
-    else valid
-        V->>H: Handle(command)
-        H->>R: uniqueness check
-        H->>R: Add(product)
-        R->>D: INSERT
-        H-->>A: Result<ProductDto>
-        A-->>C: 201 Created
-    end
-```
+1. The client sends `POST /api/products` with `Authorization: Bearer {accessToken}` and a JSON body.
+2. `ProductsController` builds a `CreateProductCommand` and sends it through MediatR.
+3. `ValidationBehavior` runs the FluentValidation rules. If validation fails, the command stops and the client receives `400` with `application/problem+json`.
+4. `CreateProductCommandHandler` takes `OwnerId` from `ICurrentUser`, checks the produce-date/email key, adds the product, and commits through `IUnitOfWork`.
+5. The handler returns `Result<ProductDto>`. `ResultMappingFilter` unwraps the value for `201 Created`, or converts a `DomainError` into the matching problem-details response (`409` for a duplicate key, `403` for a non-owner, and so on).
 
 Controllers return `Result`/`Result<T>` wrapped in `Ok(...)`, `StatusCode(201, ...)` or `StatusCode(204, ...)`. `ResultMappingFilter` unwraps the value on success and replaces failures with `application/problem+json`. This keeps error mapping out of every action and out of the domain.
 
